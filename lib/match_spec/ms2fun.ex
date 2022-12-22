@@ -52,7 +52,6 @@ defmodule MatchSpec.Ms2fun do
          {int, _} <- Integer.parse(number) do
       {var(int), %{state | vars: [int | state.vars]}}
     else
-      # TODO: better error handling
       _ -> raise "oops"
     end
   end

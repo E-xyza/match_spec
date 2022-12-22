@@ -11,6 +11,16 @@ defmodule MatchSpec do
   @doc """
   converts a function ast into an ets matchspec.
 
+  The function must have arity one, and may only have one clause which results in a
+  return value.  Only builtin guard clauses are supported.
+
+  The function must also be "`fn` ast"; you can't pass a shorthand lambda or
+  a lambda to an existing lambda.
+
+  The function lambda form is only used as a scaffolding to represent ets matching
+  and filtering operations, it will not be instantiated into bytecode of the
+  resulting module.
+
   ```elixir
   iex> require MatchSpec
   iex> MatchSpec.fun2ms(fn tuple = {k, v} when v > 1 and v < 10 -> tuple end)
@@ -37,7 +47,7 @@ defmodule MatchSpec do
     [{:->, [], [[{:{}, [], [{:v1, [], nil}, {:v2, [], nil}]}], {:v2, [], nil}]}]}
   ```
 
-  - `:code`
+  - `:code` outputs formatted elixir code.
 
   ```elixir
   iex> MatchSpec.ms2fun([{{:"$1", :"$2"}, [], [:"$2"]}, {{:"$1"}, [], [:"$_"]}], :code)
