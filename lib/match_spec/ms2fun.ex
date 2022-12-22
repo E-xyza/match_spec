@@ -1,4 +1,5 @@
 defmodule MatchSpec.Ms2fun do
+  @moduledoc false
   defstruct needs_tuple: false, vars: []
 
   def to_fun(branches, :ast) do
@@ -17,16 +18,17 @@ defmodule MatchSpec.Ms2fun do
     {body_ast, state!} = body_from(body, state!)
 
     predicate! =
-      if state!.needs_tuple && (predicate! != var(:tuple)) do
+      if state!.needs_tuple && predicate! != var(:tuple) do
         {:=, [], [var(:tuple), predicate!]}
       else
         predicate!
       end
 
-    predicate! = case guards do
-      [] -> predicate!
-      _ -> {:when, [], [predicate!, when_clauses(guards)]}
-    end
+    predicate! =
+      case guards do
+        [] -> predicate!
+        _ -> {:when, [], [predicate!, when_clauses(guards)]}
+      end
 
     {:->, [], [[predicate!], body_ast]}
   end
@@ -105,7 +107,7 @@ defmodule MatchSpec.Ms2fun do
     end
   end
 
-  arity_2_guards = ~w(is_record + - * div rem > >= < ==)a
+  arity_2_guards = ~w(+ - * div rem > >= < ==)a
 
   for guard <- arity_2_guards do
     defp guard_from_filter({unquote(guard), v1, v2}, state) do
@@ -124,6 +126,7 @@ defmodule MatchSpec.Ms2fun do
   end
 
   renamed = [andalso: :and, orelse: :or, "=<": :<=, "=:=": :===, "=/=": :!==, "/=": :!=]
+
   for {erguard, exguard} <- renamed do
     defp guard_from_filter({unquote(erguard), v1, v2}, state) do
       {asts, new_state} = Enum.map_reduce([v1, v2], state, &guard_from_filter/2)
@@ -145,13 +148,17 @@ defmodule MatchSpec.Ms2fun do
 
   defp guard_from_filter({:element, v1, v2}, state) do
     {[v1_ast, v2_ast], new_state} = Enum.map_reduce([v1, v2], state, &guard_from_filter/2)
+
     case v2 do
       int when is_integer(int) ->
         {{:elem, [], [v1_ast, v2 - 1]}, new_state}
+
       _ ->
         {{:elem, [], [v1_ast, {:-, [], [v2_ast, 1]}]}, new_state}
     end
   end
+
+  defp guard_from_filter({:const, value}, state), do: {value, state}
 
   defp guard_from_filter(:"$_", state), do: {var(:tuple), %{state | needs_tuple: true}}
   defp guard_from_filter(:"$$", state), do: {splat(state), state}
@@ -161,7 +168,6 @@ defmodule MatchSpec.Ms2fun do
          {int, _} <- Integer.parse(number) do
       {var(int), state}
     else
-      # TODO: better error handling
       _ -> raise "oops"
     end
   end
@@ -172,6 +178,7 @@ defmodule MatchSpec.Ms2fun do
 
   defp body_from(:"$_", state), do: {var(:tuple), %{state | needs_tuple: true}}
   defp body_from(:"$$", state), do: {splat(state), state}
+  defp body_from({:const, value}, state), do: {value, state}
 
   defp body_from(atom, state) when is_atom(atom) do
     with "$" <> number <- Atom.to_string(atom),

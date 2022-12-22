@@ -21,7 +21,9 @@ defmodule MatchSpec.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:mix_test_watch, "~> 1.1", only: :dev, runtime: false}
+      {:mix_test_watch, "~> 1.1", only: :dev, runtime: false},
+      {:credo, "~> 1.6"},
+      {:ex_doc, "~> 0.29.1"}
     ]
   end
 end

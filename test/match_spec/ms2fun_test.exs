@@ -28,7 +28,6 @@ defmodule MatchSpecTest.Ms2funTest do
       assert_identity(fn tuple -> tuple end)
     end
 
-    @tag :skip
     test "ignored parameter" do
       assert_identity(fn _ -> true end)
     end
@@ -151,7 +150,7 @@ defmodule MatchSpecTest.Ms2funTest do
       assert_identity(fn {v1, v2} when elem(v2, 0) -> v1 end)
 
       # the next one gets weird (+ 1 - 1)
-      #assert_identity(fn {v1, v2} when elem(v2, v1) -> v1 end)
+      # assert_identity(fn {v1, v2} when elem(v2, v1) -> v1 end)
     end
 
     test "hd works" do
@@ -165,7 +164,7 @@ defmodule MatchSpecTest.Ms2funTest do
     test ":erlang.map_get works" do
       assert_identity(fn {v1, v2} when :erlang.map_get(v1, v2) -> v1 end)
     end
-    
+
     test "map_size works" do
       assert_identity(fn {v1, v2} when map_size(v2) -> v1 end)
     end

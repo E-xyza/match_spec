@@ -1,4 +1,5 @@
 defmodule MatchSpec.Fun2ms do
+  @moduledoc false
   defstruct [:match, bindings: %{}, filters: [], return: []]
 
   @type t :: %__MODULE__{
@@ -246,6 +247,8 @@ defmodule MatchSpec.Fun2ms do
   defp analyze_filter({var, _, tag}, state) when is_atom(tag) do
     :"$#{Map.fetch!(state.bindings, var)}"
   end
+
+  defp analyze_filter(atom, _state) when is_atom(atom), do: {:const, atom}
 
   defp analyze_filter(number, _state) when is_number(number), do: number
 
