@@ -122,6 +122,10 @@ defmodule MatchSpec.Fun2ms do
     {literal, state}
   end
 
+  defp analyze_binding(atom, state) when is_atom(atom) do
+    {atom, state}
+  end
+
   defp lowest_index(bindings) do
     case Map.values(bindings) -- [:_] do
       [] -> 1
