@@ -29,8 +29,8 @@ defmodule MatchSpec.MixProject do
   defp deps do
     [
       {:mix_test_watch, "~> 1.1", only: :dev, runtime: false},
-      {:credo, "~> 1.6"},
-      {:ex_doc, "~> 0.29.1"}
+      {:credo, "~> 1.6", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.29.1", only: :dev, runtime: false}
     ]
   end
 
