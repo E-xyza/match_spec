@@ -27,15 +27,15 @@ defmodule MatchSpec.Ms2fun do
     predicate! =
       case guards do
         [] -> predicate!
-        _ -> {:when, [], [predicate!, when_clauses(guards)]}
+        _ -> {:when, [], [predicate!, and_clauses(guards)]}
       end
 
     {:->, [], [[predicate!], body_ast]}
   end
 
-  defp when_clauses([singleton]), do: singleton
-  defp when_clauses([lhs, rhs]), do: {:when, [], [lhs, rhs]}
-  defp when_clauses([head | rest]), do: {:when, [], [head, when_clauses(rest)]}
+  defp and_clauses([singleton]), do: singleton
+  defp and_clauses([lhs, rhs]), do: {:and, [], [lhs, rhs]}
+  defp and_clauses([head | rest]), do: {:and, [], [head, and_clauses(rest)]}
 
   defp var(name) when is_atom(name), do: {name, [], nil}
   defp var(int) when is_number(int), do: var(:"v#{int}")

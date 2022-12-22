@@ -238,11 +238,5 @@ defmodule MatchSpecTest.Ms2funTest do
     test "raw value" do
       assert_identity(fn {v1} when v1 -> v1 end)
     end
-
-    test "multiple filters" do
-      assert_identity(fn {v1, v2, v3} when v1 when v2 -> v3 end)
-
-      assert_identity(fn {v1, v2, v3, v4} when v1 when v2 when v3 -> v4 end)
-    end
   end
 end

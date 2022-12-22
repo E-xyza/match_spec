@@ -273,14 +273,6 @@ defmodule MatchSpecTest.Fun2msTest do
       assert [{{:"$1"}, [:"$1"], [:"$1"]}] ==
                MatchSpec.fun2ms(fn {a} when a -> a end)
     end
-
-    test "multiple filters" do
-      assert [{{:"$1", :"$2", :"$3"}, [:"$1", :"$2"], [:"$3"]}] ==
-               MatchSpec.fun2ms(fn {a, b, c} when a when b -> c end)
-
-      assert [{{:"$1", :"$2", :"$3", :"$4"}, [:"$1", :"$2", :"$3"], [:"$4"]}] ==
-               MatchSpec.fun2ms(fn {a, b, c, d} when a when b when c -> d end)
-    end
   end
 
   describe "bodies" do
