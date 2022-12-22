@@ -146,10 +146,10 @@ defmodule MatchSpecTest.Fun2msTest do
     end
 
     test "element works, but translates to element and adds one" do
-      assert [{{:"$1", :"$2"}, [{:element, :"$2", 1}], [:"$1"]}] ==
+      assert [{{:"$1", :"$2"}, [{:element, 1, :"$2"}], [:"$1"]}] ==
                MatchSpec.fun2ms(fn {a, b} when elem(b, 0) -> a end)
 
-      assert [{{:"$1", :"$2"}, [{:element, :"$2", {:+, :"$1", 1}}], [:"$1"]}] ==
+      assert [{{:"$1", :"$2"}, [{:element, {:+, :"$1", 1}, :"$2"}], [:"$1"]}] ==
                MatchSpec.fun2ms(fn {a, b} when elem(b, a) -> a end)
     end
 

@@ -148,12 +148,12 @@ defmodule MatchSpec.Ms2fun do
   defp guard_from_filter({:element, v1, v2}, state) do
     {[v1_ast, v2_ast], new_state} = Enum.map_reduce([v1, v2], state, &guard_from_filter/2)
 
-    case v2 do
+    case v1 do
       int when is_integer(int) ->
-        {{:elem, [], [v1_ast, v2 - 1]}, new_state}
+        {{:elem, [], [v2_ast, v1 - 1]}, new_state}
 
       _ ->
-        {{:elem, [], [v1_ast, {:-, [], [v2_ast, 1]}]}, new_state}
+        {{:elem, [], [v2_ast, {:-, [], [v1_ast, 1]}]}, new_state}
     end
   end
 

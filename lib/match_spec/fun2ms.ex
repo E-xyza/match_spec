@@ -192,11 +192,11 @@ defmodule MatchSpec.Fun2ms do
     to_tuple_ast(
       case idx do
         int when is_integer(int) ->
-          {:element, analyze_filter(tup, state), int + 1}
+          {:element, int + 1, analyze_filter(tup, state)}
 
         {_, _, _} ->
-          {:element, analyze_filter(tup, state),
-           to_tuple_ast({:+, analyze_filter(idx, state), 1})}
+          {:element, to_tuple_ast({:+, analyze_filter(idx, state), 1}),
+           analyze_filter(tup, state)}
       end
     )
   end
