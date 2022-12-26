@@ -32,6 +32,82 @@ defmodule MatchSpec do
   end
 
   @doc """
+  converts a function into a function that generates a match spec based on bindings.  This can
+  be used to either create an named function or an anonymous function.
+
+  Example (def/defp):
+
+  ```elixir
+  require Fun2ms
+
+  MatchSpec.fun2msfun(:def, :matchspec, fn {key, value} when key == target -> value end, [target])
+  ```
+
+  Example (lambda):
+
+  ```elixir
+  iex> require MatchSpec
+  iex> lambda = MatchSpec.fun2msfun(:lambda, fn {key, value} when key === target -> value end, [target])
+  iex> lambda.(:key)
+  [[{{:"$1", :"$2"}, [{:"=:=", :"$1", :key}], [:"$2"]}]]
+  ```
+  """
+  defmacro fun2msfun(type, name \\ nil, _fun_ast, _bindings) when is_atom(nil) do
+    case type do
+      type when type in [:def, :defp] ->
+        unless name do
+          raise CompileError,
+            description: "def and defp fun2msfun invocations must have a name",
+            file: __CALLER__.file,
+            line: __CALLER__.line
+        end
+
+        if __CALLER__.function do
+          raise CompileError,
+            description: "def and defp fun2msfun invocations must be in the module body",
+            file: __CALLER__.file,
+            line: __CALLER__.line
+        end
+
+        if context = __CALLER__.context do
+          raise CompileError,
+            description: "def and defp fun2msfun invocations may not be in a #{context}",
+            file: __CALLER__.file,
+            line: __CALLER__.line
+        end
+
+      :lambda ->
+        if name do
+          raise CompileError,
+            description: "lambda fun2msfun invocations must not have a name",
+            file: __CALLER__.file,
+            line: __CALLER__.line
+        end
+
+        # it should be ok to run it from IEx or outside of a module in general.
+        unless !__CALLER__.module or __CALLER__.function do
+          raise CompileError,
+            description: "lambda fun2msfun invocations must be in a function body",
+            file: __CALLER__.file,
+            line: __CALLER__.line
+        end
+
+        if context = __CALLER__.context do
+          raise CompileError,
+            description: "lambda fun2msfun invocations may not be in a #{context}",
+            file: __CALLER__.file,
+            line: __CALLER__.line
+        end
+
+      _ ->
+        raise CompileError,
+          description: "fun2msfun must be one of `:lambda`, `:def`, `:defp`",
+          file: __CALLER__.file,
+          line: __CALLER__.line
+    end
+  end
+
+  @doc """
   converts a matchspec into elixir AST for functions.  Unfortunately, the ast
   generator cannot guess names for variables, so variable names are set by
   the numerical value of the matchspec token
