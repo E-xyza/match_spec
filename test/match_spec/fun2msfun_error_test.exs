@@ -9,7 +9,7 @@ defmodule MatchSpecTest.Fun2msfunErrorTest do
     end
   end
 
-  test "f2msfun errors if you have a bad type" do
+  test "fun2msfun errors if you have a bad type" do
     assert_compile_error(
       "fun2msfun_with_bad_type.exs",
       ~r/fun2msfun must be one of `:lambda`, `:def`, `:defp`$/

@@ -28,31 +28,31 @@ defmodule MatchSpec do
   ```
   """
   defmacro fun2ms(fun_ast) do
-    Fun2ms.from_fun_ast(fun_ast)
+    Fun2ms.from_fun_ast(fun_ast, caller: __CALLER__)
   end
 
   @doc """
   converts a function into a function that generates a match spec based on bindings.  This can
   be used to either create an named function or an anonymous function.
 
-  Example (def/defp):
-
-  ```elixir
-  require Fun2ms
-
-  MatchSpec.fun2msfun(:def, :matchspec, fn {key, value} when key == target -> value end, [target])
-  ```
-
-  Example (lambda):
+  Example (lambda, default):
 
   ```elixir
   iex> require MatchSpec
   iex> lambda = MatchSpec.fun2msfun(:lambda, fn {key, value} when key === target -> value end, [target])
   iex> lambda.(:key)
   [[{{:"$1", :"$2"}, [{:"=:=", :"$1", :key}], [:"$2"]}]]
+
+  Example (def/defp):
+
+  ```elixir
+  require MatchSpec
+
+  MatchSpec.fun2msfun(:def, :matchspec, fn {key, value} when key == target -> value end, [target])
+  ```
   ```
   """
-  defmacro fun2msfun(type, name \\ nil, _fun_ast, _bindings) when is_atom(nil) do
+  defmacro fun2msfun(type \\ :lambda, name \\ nil, fun_ast, bindings) when is_atom(nil) do
     case type do
       type when type in [:def, :defp] ->
         unless name do
@@ -99,12 +99,79 @@ defmodule MatchSpec do
             line: __CALLER__.line
         end
 
+        ms_ast = Fun2ms.from_fun_ast(fun_ast, bind: bindings, caller: __CALLER__)
+
+        quote do
+          fn unquote_splicing(bindings) ->
+            unquote(ms_ast)
+          end
+        end
+        |> _macro_inspect()
+
       _ ->
         raise CompileError,
           description: "fun2msfun must be one of `:lambda`, `:def`, `:defp`",
           file: __CALLER__.file,
           line: __CALLER__.line
     end
+  end
+
+  @doc """
+  Writes a matchspec-generating function based on a body.  You may provide multiple function bodies.
+  This is syntactic sugar for using matchspec
+
+  Example:
+
+  ```elixir
+  use MatchSpec
+
+  defms my_matchspec(value1, value2)({key, value1, value}) when key === :foo do
+    value == value2
+  end
+  ```
+
+  This generates the equivalent to the following function:
+
+  ```elixir
+  def my_matchspec(value1, value2) do
+    [{:"$1", value1, :"$2"}, [{:"=:=", :"$1", :foo}], [{:==, :"$2", {:const, value2}}]]
+  end
+  """
+  defmacro defms({{_matchspec_name, _, _vars}, _, [_match]}, do: _do_expr) do
+  end
+
+  defmacro defms({:when, _, [{{_matchspec_name, _, _vars}, _, [_match]}, _when_clause]},
+             do: _do_expr
+           ) do
+  end
+
+  @doc """
+  Writes a matchspec-generating function based on a body.  You may provide multiple function bodies.
+  This is syntactic sugar for using matchspec
+
+  Example:
+
+  ```elixir
+  use MatchSpec
+
+  defms my_matchspec(value1, value2)({key, value1, value}) when key === :foo do
+    value == value2
+  end
+  ```
+
+  This generates the equivalent to the following function:
+
+  ```elixir
+  def my_matchspec(value1, value2) do
+    [{:"$1", value1, :"$2"}, [{:"=:=", :"$1", :foo}], [{:==, :"$2", {:const, value2}}]]
+  end
+  """
+  defmacro defmsp({{_matchspec_name, _, _vars}, _, [_match]}, do: _do_expr) do
+  end
+
+  defmacro defmsp({:when, _, [{{_matchspec_name, _, _vars}, _, [_match]}, _when_clause]},
+             do: _do_expr
+           ) do
   end
 
   @doc """
@@ -137,4 +204,12 @@ defmodule MatchSpec do
   ```
   """
   defdelegate ms2fun(ms, mode), to: Ms2fun, as: :to_fun
+
+  def _macro_inspect(macro) do
+    macro
+    |> Macro.to_string()
+    |> IO.puts()
+
+    macro
+  end
 end

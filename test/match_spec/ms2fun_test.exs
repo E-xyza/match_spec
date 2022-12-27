@@ -14,7 +14,7 @@ defmodule MatchSpecTest.Ms2funTest do
     quote bind_quoted: [ast: ast, caller: caller] do
       result =
         ast
-        |> Fun2ms.from_fun_ast()
+        |> Fun2ms.from_fun_ast(caller: caller)
         |> Code.eval_quoted([], caller)
         |> elem(0)
         |> MatchSpec.ms2fun(:code)

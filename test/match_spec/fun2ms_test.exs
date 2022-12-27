@@ -5,7 +5,7 @@ defmodule MatchSpecTest.Fun2msTest do
 
   describe "basic fun2ms" do
     test "works" do
-      assert [{:"$_", [], [:"$_"]}] == MatchSpec.fun2ms(fn data -> data end)
+      assert [{:_, [], [:"$_"]}] == MatchSpec.fun2ms(fn data -> data end)
     end
 
     test "can ignore the parameter" do
