@@ -106,6 +106,7 @@ defmodule MatchSpec do
             unquote(ms_ast)
           end
         end
+        |> IO.inspect
         |> _macro_inspect()
 
       _ ->

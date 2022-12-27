@@ -56,7 +56,7 @@ defmodule MatchSpec.Fun2ms do
   # attempting to bind variables at the top, rhs
   defp set_match({:=, _, [{var, _, tag}, rhs]}, state) when is_atom(tag) do
     {match_spec, state} =
-      set_match(rhs, %{state | bindings: Map.put_new(state.bindings, var, :_)})
+      set_match(rhs, %{state | bindings: Map.put_new(state.bindings, var, :"$_")})
 
     {match_spec, %{state | match: match_spec}}
   end
@@ -64,7 +64,7 @@ defmodule MatchSpec.Fun2ms do
   # attempting to bind variables at the top, lhs
   defp set_match({:=, _, [lhs, {var, _, tag}]}, state) when is_atom(tag) do
     {match_spec, state} =
-      set_match(lhs, %{state | bindings: Map.put_new(state.bindings, var, :_)})
+      set_match(lhs, %{state | bindings: Map.put_new(state.bindings, var, :"$_")})
 
     {match_spec, %{state | match: match_spec}}
   end
@@ -80,7 +80,7 @@ defmodule MatchSpec.Fun2ms do
         {:_, state}
 
       _ ->
-        {:_, %{state | bindings: Map.put(state.bindings, var, :_)}}
+        {:_, %{state | bindings: Map.put(state.bindings, var, :"$_")}}
     end
   end
 
@@ -172,7 +172,7 @@ defmodule MatchSpec.Fun2ms do
   defp lowest_index(bindings) do
     bindings
     |> Map.values()
-    |> Enum.reject(&(match?({_, _, _}, &1) or &1 == :_))
+    |> Enum.reject(&(match?({_, _, _}, &1) or &1 == :"$_"))
     |> case do
       [] -> 1
       list -> Enum.max(list) + 1
@@ -294,7 +294,16 @@ defmodule MatchSpec.Fun2ms do
   end
 
   defp set_filter({var, _, tag}, state) when is_atom(tag) do
-    :"$#{Map.fetch!(state.bindings, var)}"
+    case Map.fetch!(state.bindings, var) do
+      :"$_" ->
+        :"$_"
+
+      int when is_integer(int) ->
+        :"$#{int}"
+
+      variable = {_, _, _} ->
+        {:const, variable}
+    end
   end
 
   defp set_filter(atom, _state) when is_atom(atom), do: {:const, atom}
@@ -307,8 +316,11 @@ defmodule MatchSpec.Fun2ms do
   end
 
   defp make_term({var, _, tag}, state) when is_atom(tag) do
-    index = Map.fetch!(state.bindings, var)
-    :"$#{index}"
+    case Map.fetch!(state.bindings, var) do
+      :"$_" -> :"$_"
+      int when is_integer(int) -> :"$#{int}"
+      variable = {_, _, _} -> {:const, variable}
+    end
   end
 
   defp make_term({:{}, _, terms}, state) do
