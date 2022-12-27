@@ -76,6 +76,14 @@ defmodule MatchSpec do
             line: __CALLER__.line
         end
 
+        ms_ast = Fun2ms.from_fun_ast(fun_ast, bind: bindings, caller: __CALLER__)
+
+        quote do
+          unquote(type)(unquote(name)(unquote_splicing(bindings))) do
+            unquote(ms_ast)
+          end
+        end
+
       :lambda ->
         if name do
           raise CompileError,
@@ -106,8 +114,6 @@ defmodule MatchSpec do
             unquote(ms_ast)
           end
         end
-        |> IO.inspect
-        |> _macro_inspect()
 
       _ ->
         raise CompileError,
