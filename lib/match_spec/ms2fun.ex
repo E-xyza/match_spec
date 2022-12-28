@@ -13,24 +13,24 @@ defmodule MatchSpec.Ms2fun do
   end
 
   defp branches_to_arrows({match, filters, [body]}) do
-    {predicate!, state!} = predicate_from_match(match, %__MODULE__{})
+    {argument!, state!} = argument_from_match(match, %__MODULE__{})
     {guards, state!} = Enum.map_reduce(filters, state!, &guard_from_filter/2)
     {body_ast, state!} = body_from(body, state!)
 
-    predicate! =
-      if state!.needs_tuple && predicate! != var(:tuple) do
-        {:=, [], [var(:tuple), predicate!]}
+    argument! =
+      if state!.needs_tuple && argument! != var(:tuple) do
+        {:=, [], [var(:tuple), argument!]}
       else
-        predicate!
+        argument!
       end
 
-    predicate! =
+    argument! =
       case guards do
-        [] -> predicate!
-        _ -> {:when, [], [predicate!, and_clauses(guards)]}
+        [] -> argument!
+        _ -> {:when, [], [argument!, and_clauses(guards)]}
       end
 
-    {:->, [], [[predicate!], body_ast]}
+    {:->, [], [[argument!], body_ast]}
   end
 
   defp and_clauses([singleton]), do: singleton
@@ -40,14 +40,14 @@ defmodule MatchSpec.Ms2fun do
   defp var(name) when is_atom(name), do: {name, [], nil}
   defp var(int) when is_number(int), do: var(:"v#{int}")
 
-  defp predicate_from_match(:"$_", state), do: {var(:tuple), %{state | needs_tuple: true}}
-  defp predicate_from_match(:_, state), do: {var(:_), state}
+  defp argument_from_match(:"$_", state), do: {var(:tuple), %{state | needs_tuple: true}}
+  defp argument_from_match(:_, state), do: {var(:_), state}
 
-  defp predicate_from_match(list, state) when is_list(list) do
-    Enum.map_reduce(list, state, &predicate_from_match/2)
+  defp argument_from_match(list, state) when is_list(list) do
+    Enum.map_reduce(list, state, &argument_from_match/2)
   end
 
-  defp predicate_from_match(atom, state) when is_atom(atom) do
+  defp argument_from_match(atom, state) when is_atom(atom) do
     with "$" <> number <- Atom.to_string(atom),
          {int, _} <- Integer.parse(number) do
       {var(int), %{state | vars: [int | state.vars]}}
@@ -56,33 +56,33 @@ defmodule MatchSpec.Ms2fun do
     end
   end
 
-  defp predicate_from_match(tuple, state) when is_tuple(tuple) do
+  defp argument_from_match(tuple, state) when is_tuple(tuple) do
     {tuple_list, new_state} =
       tuple
       |> Tuple.to_list()
-      |> Enum.map_reduce(state, &predicate_from_match/2)
+      |> Enum.map_reduce(state, &argument_from_match/2)
 
     {{:{}, [], tuple_list}, new_state}
   end
 
-  defp predicate_from_match(map = %struct{}, state) do
-    {predicate, new_state} = predicate_from_match(Map.from_struct(map), state)
+  defp argument_from_match(map = %struct{}, state) do
+    {argument, new_state} = argument_from_match(Map.from_struct(map), state)
 
-    {{:%, [], [struct, predicate]}, new_state}
+    {{:%, [], [struct, argument]}, new_state}
   end
 
-  defp predicate_from_match(map, state) when is_map(map) do
+  defp argument_from_match(map, state) when is_map(map) do
     {map_list, new_state} =
       Enum.map_reduce(map, state, fn
         {k, v}, state_so_far ->
-          {new_v, new_state} = predicate_from_match(v, state_so_far)
+          {new_v, new_state} = argument_from_match(v, state_so_far)
           {{k, new_v}, new_state}
       end)
 
     {{:%{}, [], map_list}, new_state}
   end
 
-  defp predicate_from_match(literal, state) when is_number(literal) or is_bitstring(literal) do
+  defp argument_from_match(literal, state) when is_number(literal) or is_bitstring(literal) do
     {literal, state}
   end
 

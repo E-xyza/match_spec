@@ -132,7 +132,7 @@ defmodule MatchSpec do
   ```elixir
   use MatchSpec
 
-  defms my_matchspec(value1, value2)({key, value1, value}) when key === :foo do
+  defmatchspec my_matchspec(value1, value2)({key, value1, value}) when key === :foo do
     value == value2
   end
   ```
@@ -144,12 +144,21 @@ defmodule MatchSpec do
     [{:"$1", value1, :"$2"}, [{:"=:=", :"$1", :foo}], [{:==, :"$2", {:const, value2}}]]
   end
   """
-  defmacro defms({{_matchspec_name, _, _vars}, _, [_match]}, do: _do_expr) do
+  defmacro defmatchspec({{name, _, bindings}, _, [match]}, do: expr) do
+    assert_used(__CALLER__, :defmatchspec)
+
+    [bindings, match, expr, caller] =
+      Enum.map([bindings, match, expr, __CALLER__], &Macro.escape/1)
+
+    quote bind_quoted: [name: name, bindings: bindings, match: match, expr: expr, caller: caller] do
+      @match_spec_bodies {name, :def, bindings, match, expr, caller}
+    end
   end
 
-  defmacro defms({:when, _, [{{_matchspec_name, _, _vars}, _, [_match]}, _when_clause]},
+  defmacro defmatchspec({:when, _, [{{_matchspec_name, _, _vars}, _, [_match]}, _when_clause]},
              do: _do_expr
            ) do
+    assert_used(__CALLER__, :defmatchspec)
   end
 
   @doc """
@@ -161,7 +170,7 @@ defmodule MatchSpec do
   ```elixir
   use MatchSpec
 
-  defms my_matchspec(value1, value2)({key, value1, value}) when key === :foo do
+  defmatchspec my_matchspec(value1, value2)({key, value1, value}) when key === :foo do
     value == value2
   end
   ```
@@ -173,12 +182,14 @@ defmodule MatchSpec do
     [{:"$1", value1, :"$2"}, [{:"=:=", :"$1", :foo}], [{:==, :"$2", {:const, value2}}]]
   end
   """
-  defmacro defmsp({{_matchspec_name, _, _vars}, _, [_match]}, do: _do_expr) do
+  defmacro defmatchspecp({{_matchspec_name, _, _vars}, _, [_match]}, do: _do_expr) do
+    assert_used(__CALLER__, :defmatchspecp)
   end
 
-  defmacro defmsp({:when, _, [{{_matchspec_name, _, _vars}, _, [_match]}, _when_clause]},
+  defmacro defmatchspecp({:when, _, [{{_matchspec_name, _, _vars}, _, [_match]}, _when_clause]},
              do: _do_expr
            ) do
+    assert_used(__CALLER__, :defmatchspecp)
   end
 
   @doc """
@@ -211,6 +222,36 @@ defmodule MatchSpec do
   ```
   """
   defdelegate ms2fun(ms, mode), to: Ms2fun, as: :to_fun
+
+  defmacro __using__(_opts) do
+    module = __CALLER__.module
+    Module.register_attribute(module, :match_spec_bodies, accumulate: true)
+
+    quote do
+      @before_compile MatchSpec
+      import MatchSpec, only: [defmatchspec: 2, defmatchspecp: 2]
+    end
+  end
+
+  defmacro __before_compile__(env) do
+    env.module
+    |> Module.get_attribute(:match_spec_bodies)
+    |> Enum.group_by(&elem(&1, 0))
+    |> dbg
+
+    quote do
+      :ok
+    end
+  end
+
+  defp assert_used(env, type) do
+    unless Module.get_attribute(env.module, :match_spec_bodies) do
+      raise CompileError,
+        description: "#{type} may only be used if you have `use MatchSpec` in the module",
+        file: env.file,
+        line: env.line
+    end
+  end
 
   def _macro_inspect(macro) do
     macro

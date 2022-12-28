@@ -1,7 +1,7 @@
 defmodule MatchSpecTest.Fun2msfunTest do
   use ExUnit.Case, async: true
 
-  import MatchSpec, only: [fun2msfun: 2, fun2msfun: 4]
+  import MatchSpec
 
   describe "for fun2msfun with a lambda," do
     test "you can bind a variable to the whole in the match" do
