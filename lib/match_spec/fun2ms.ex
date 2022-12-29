@@ -1,5 +1,6 @@
 defmodule MatchSpec.Fun2ms do
   @moduledoc false
+  # to make debugging less insane
   @derive {Inspect, except: [:caller]}
   defstruct [:head, :caller, bindings: %{}, conditions: [], body: []]
 
@@ -12,21 +13,21 @@ defmodule MatchSpec.Fun2ms do
         }
 
   @typedoc "ast for a function argument match"
-  @type arg_ast :: Macro.t
+  @type arg_ast :: Macro.t()
   @typedoc "ast for a function when clause"
-  @type when_ast :: Macro.t
+  @type when_ast :: Macro.t()
   @typedoc "ast for a function return expression"
-  @type expr_ast :: Macro.t
+  @type expr_ast :: Macro.t()
 
   # see https://www.erlang.org/doc/apps/erts/match_spec.html
   # names here align with the "informal grammar" section.any()
 
   @typedoc "ast for a matchspec match"
-  @type head_ast :: Macro.t
+  @type head_ast :: Macro.t()
   @typedoc "ast for a matchspec condition"
-  @type condition_ast :: [Macro.t]
+  @type condition_ast :: [Macro.t()]
   @typedoc "ast for a matchspec body"
-  @type body_ast :: [Macro.t]
+  @type body_ast :: [Macro.t()]
 
   @typedoc "ast for a bindable variable"
   @type var_ast :: {name :: atom, meta :: keyword, context :: atom}
@@ -57,7 +58,7 @@ defmodule MatchSpec.Fun2ms do
     Enum.map(parts, &from_part(&1, opts))
   end
 
-  @spec from_part(part_ast, keyword) :: Macro.t
+  @spec from_part(part_ast, keyword) :: Macro.t()
   defp from_part({arg_ast, when_ast, expr_ast}, opts) do
     %__MODULE__{caller: Keyword.fetch!(opts, :caller)}
     |> load_bindings(opts)
@@ -67,9 +68,11 @@ defmodule MatchSpec.Fun2ms do
     |> to_quoted
   end
 
-  @spec to_quoted(t) :: Macro.t
+  @spec to_quoted(t) :: Macro.t()
   defp to_quoted(state) do
-    quote do {unquote(state.head), unquote(state.conditions), unquote(state.body)} end
+    quote do
+      {unquote(state.head), unquote(state.conditions), unquote(state.body)}
+    end
   end
 
   defp load_bindings(state, opts) do
@@ -93,10 +96,12 @@ defmodule MatchSpec.Fun2ms do
         state
         |> bind_top_var(var)
         |> set_head(rhs)
+
       {_, {var, _, tag}} when is_atom(tag) ->
         state
         |> bind_top_var(var)
         |> set_head(lhs)
+
       _ ->
         # TODO: should we do a resolution on this?
         raise "unsupported head argument matching"
@@ -293,7 +298,8 @@ defmodule MatchSpec.Fun2ms do
           {:element, int + 1, expression_from(tup, state)}
 
         {_, _, _} ->
-          {:element, to_tuple_ast({:+, expression_from(idx, state), 1}), expression_from(tup, state)}
+          {:element, to_tuple_ast({:+, expression_from(idx, state), 1}),
+           expression_from(tup, state)}
       end
     )
   end
@@ -312,7 +318,8 @@ defmodule MatchSpec.Fun2ms do
         !=: {:"/=", 2},
         !==: {:"=/=", 2}
       ] do
-    defp expression_from({unquote(exguard), _, args}, state) when length(args) == unquote(arity) do
+    defp expression_from({unquote(exguard), _, args}, state)
+         when length(args) == unquote(arity) do
       translated_args = Enum.map(args, &expression_from(&1, state))
       to_tuple_ast([unquote(msguard) | translated_args])
     end
@@ -406,10 +413,10 @@ defmodule MatchSpec.Fun2ms do
 
   defp tuple_wrap(tuple_parts) do
     tuple_parts
-    |> List.to_tuple
+    |> List.to_tuple()
     |> to_tuple_ast
-    |> List.wrap
-    |> List.to_tuple
+    |> List.wrap()
+    |> List.to_tuple()
     |> to_tuple_ast
   end
 end

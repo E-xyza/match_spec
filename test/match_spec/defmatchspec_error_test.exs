@@ -23,5 +23,19 @@ defmodule MatchSpecTest.DefmatchspecErrorTest do
         ~r/defmatchspecp may only be used if you have `use MatchSpec` in the module$/
       )
     end
+
+    test "if you try to redefine defmatchspec" do
+      assert_compile_error(
+        "defmatchspecp_after_defmatchspec.exs",
+        ~r(defmatchspecp my_matchspec/1 was already been defined as defmatchspec)
+      )
+    end
+
+    test "if you try to redefine defmatchspecp" do
+      assert_compile_error(
+        "defmatchspec_after_defmatchspecp.exs",
+        ~r(defmatchspec my_matchspec/1 was already been defined as defmatchspecp)
+      )
+    end
   end
 end
