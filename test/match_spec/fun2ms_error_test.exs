@@ -15,4 +15,18 @@ defmodule MatchSpecTest.Fun2msErrorTest do
       ~r"only one structured pattern match allowed, multiple structured heads found: `{_, _}` and `{_}`"
     )
   end
+
+  test "fun2ms rejects arity not 1" do
+    assert_compile_error(
+      "fun2ms_with_wrong_arity.exs",
+      ~r"function branches for matchspecs must have arity 1 \(got arity 2\)"
+    )
+  end
+
+  test "fun2ms rejects arity not 1 with a when statement" do
+    assert_compile_error(
+      "fun2ms_with_wrong_arity_and_when.exs",
+      ~r"function branches for matchspecs must have arity 1 \(got arity 2\)"
+    )
+  end
 end

@@ -38,20 +38,44 @@ defmodule MatchSpec.Fun2ms do
   def from_arrows(arrows, opts) do
     Enum.map(arrows, fn arrow ->
       arrow
-      |> part_ast_from_arrow
+      |> part_ast_from_arrow(opts)
       |> from_part(opts)
     end)
   end
 
-  defp part_ast_from_arrow({:->, _, [argument, expr_ast]}) do
-    {arg_ast, when_ast} = arg_when_from_argument(argument)
+  defp part_ast_from_arrow({:->, _, [argument, expr_ast]}, opts) do
+    {arg_ast, when_ast} = arg_when_from_argument(argument, opts)
     {arg_ast, when_ast, expr_ast}
   end
 
-  @spec arg_when_from_argument(Macro.t()) :: {arg_ast, when_ast}
-  defp arg_when_from_argument([{:when, _, [arg_ast, when_ast]}]), do: {arg_ast, [when_ast]}
+  @spec arg_when_from_argument(Macro.t(), keyword) :: {arg_ast, when_ast}
+  defp arg_when_from_argument([{:when, _, when_params}], opts) do
+    case when_params do
+      [arg_ast, when_ast] ->
+        {arg_ast, [when_ast]}
 
-  defp arg_when_from_argument([arg_ast]), do: {arg_ast, []}
+      _ ->
+        %{file: file, line: line} = Keyword.fetch!(opts, :caller)
+
+        raise CompileError,
+          description:
+            "function branches for matchspecs must have arity 1 (got arity #{length(when_params) - 1})",
+          file: file,
+          line: line
+    end
+  end
+
+  defp arg_when_from_argument([arg_ast], _), do: {arg_ast, []}
+
+  defp arg_when_from_argument(list, opts) when is_list(list) do
+    %{file: file, line: line} = Keyword.fetch!(opts, :caller)
+
+    raise CompileError,
+      description:
+        "function branches for matchspecs must have arity 1 (got arity #{length(list)})",
+      file: file,
+      line: line
+  end
 
   @spec from_parts([part_ast], keyword) :: Macro.t()
   def from_parts(parts, opts) do
@@ -82,8 +106,10 @@ defmodule MatchSpec.Fun2ms do
       binding = {var, _, _atom}, state_so_far ->
         new_bindings = Map.put(state_so_far.bindings, var, binding)
         %{state_so_far | bindings: new_bindings}
+
       # constant values don't trigger registering a binding
-      constant, state when is_atom(constant) or is_binary(constant) or is_number(constant) -> state
+      constant, state when is_atom(constant) or is_binary(constant) or is_number(constant) ->
+        state
     end)
   end
 
