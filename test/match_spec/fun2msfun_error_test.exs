@@ -9,11 +9,20 @@ defmodule MatchSpecTest.Fun2msfunErrorTest do
     end
   end
 
-  test "fun2msfun errors if you have a bad type" do
-    assert_compile_error(
-      "fun2msfun_with_bad_type.exs",
-      ~r/fun2msfun must be one of `:lambda`, `:def`, `:defp`$/
-    )
+  describe "fun2msfun errors" do
+    test "if you have a bad type" do
+      assert_compile_error(
+        "fun2msfun_with_bad_type.exs",
+        ~r/fun2msfun must be one of `:lambda`, `:def`, `:defp`$/
+      )
+    end
+
+    test "if you have an undefined pin" do
+      assert_compile_error(
+        "fun2msfun_with_undefined_pin.exs",
+        ~r/pin requires a bound variable \(got undefined, found: \[\]\)$/
+      )
+    end
   end
 
   describe "def/defp fun2msfun invocation" do

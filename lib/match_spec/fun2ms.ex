@@ -182,7 +182,7 @@ defmodule MatchSpec.Fun2ms do
 
       _ ->
         raise CompileError,
-          description: "pin requires a bound variable (got #{var}, found: #{inspect(vars)}",
+          description: "pin requires a bound variable (got #{var}, found: #{inspect(vars)})",
           file: state.caller.file,
           line: state.caller.line
     end
