@@ -42,7 +42,7 @@ defmodule MatchSpec do
   iex> require MatchSpec
   iex> lambda = MatchSpec.fun2msfun(:lambda, fn {key, value} when key === target -> value end, [target])
   iex> lambda.(:key)
-  [[{{:"$1", :"$2"}, [{:"=:=", :"$1", :key}], [:"$2"]}]]
+  [{{:"$1", :"$2"}, [{:"=:=", :"$1", :key}], [:"$2"]}]
 
   Example (def/defp):
 
@@ -54,9 +54,10 @@ defmodule MatchSpec do
   ```
   """
   defmacro fun2msfun(type \\ :lambda, name \\ nil, fun_ast, bindings) when is_atom(nil) do
-    arrows = case fun_ast do
-      {:fn, _, arrows} -> arrows
-    end
+    arrows =
+      case fun_ast do
+        {:fn, _, arrows} -> arrows
+      end
 
     case type do
       type when type in [:def, :defp] ->
@@ -152,9 +153,10 @@ defmodule MatchSpec do
   defmacro defmatchspec(header, do: expr) do
     Defmatchspec.assert_used(__CALLER__, :defmatchspec)
 
-    matchspec_body = :def
-    |> Defmatchspec.struct_from(header, expr, __CALLER__)
-    |> Macro.escape
+    matchspec_body =
+      :def
+      |> Defmatchspec.struct_from(header, expr, __CALLER__)
+      |> Macro.escape()
 
     quote bind_quoted: [matchspec_body: matchspec_body] do
       MatchSpec.Defmatchspec.assert_consistent(matchspec_body, @match_spec_bodies)
@@ -186,9 +188,10 @@ defmodule MatchSpec do
   defmacro defmatchspecp(header, do: expr) do
     Defmatchspec.assert_used(__CALLER__, :defmatchspecp)
 
-    matchspec_body = :defp
-    |> Defmatchspec.struct_from(header, expr, __CALLER__)
-    |> Macro.escape
+    matchspec_body =
+      :defp
+      |> Defmatchspec.struct_from(header, expr, __CALLER__)
+      |> Macro.escape()
 
     quote bind_quoted: [matchspec_body: matchspec_body] do
       MatchSpec.Defmatchspec.assert_consistent(matchspec_body, @match_spec_bodies)

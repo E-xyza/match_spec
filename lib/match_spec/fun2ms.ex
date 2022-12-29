@@ -78,48 +78,49 @@ defmodule MatchSpec.Fun2ms do
   defp load_bindings(state, opts) do
     opts
     |> Keyword.get(:bind, [])
-    |> Enum.reduce(state, fn binding = {var, _, _atom}, state_so_far ->
-      new_bindings = Map.put(state_so_far.bindings, var, binding)
-      %{state_so_far | bindings: new_bindings}
+    |> Enum.reduce(state, fn
+      binding = {var, _, _atom}, state_so_far ->
+        new_bindings = Map.put(state_so_far.bindings, var, binding)
+        %{state_so_far | bindings: new_bindings}
+      # constant values don't trigger registering a binding
+      constant, state when is_atom(constant) or is_binary(constant) or is_number(constant) -> state
     end)
   end
 
-  # generic matching, but not at the top.
+  # generic matching, special cased to handle variables at the top which
+  # might get matched to :"$_"
   @spec set_head(t, arg_ast) :: t
   # attempting to bind variables at the top
-  defp set_head(state, {:=, _, [lhs, rhs]}) do
-    case {lhs, rhs} do
-      # for both of these cases, bind_top_var must take precedence because
-      # the non var-assignment must shadow top_var which is always available
-      # as :"$_"
-      {{var, _, tag}, _} when is_atom(tag) ->
-        state
-        |> bind_top_var(var)
-        |> set_head(rhs)
+  defp set_head(state, arg_ast) do
+    head_matches = find_head_matches(arg_ast, %{top: [], pattern: :_}, state)
 
-      {_, {var, _, tag}} when is_atom(tag) ->
-        state
-        |> bind_top_var(var)
-        |> set_head(lhs)
-
-      _ ->
-        # TODO: should we do a resolution on this?
-        raise "unsupported head argument matching"
-    end
+    head_matches.top
+    |> Enum.reduce(state, &bind_top_var/2)
+    |> bind_head_match(head_matches.pattern)
   end
 
-  ## whole variable bound at the top, not a structured datatype.
-  defp set_head(state, {var, _, tag}) when is_atom(tag) do
-    bind_top_var(state, var)
+  defp find_head_matches({:=, _, [lhs, rhs]}, matches, state) do
+    Enum.reduce([lhs, rhs], matches, &find_head_matches(&1, &2, state))
   end
 
-  defp set_head(state, binding) do
-    {head_ast, new_state} = bind_to(binding, state)
-    %{new_state | head: head_ast}
+  defp find_head_matches({name, _, tag}, matches, _state) when is_atom(tag) do
+    %{matches | top: [name | matches.top]}
   end
 
-  @spec bind_top_var(t, atom) :: t
-  defp bind_top_var(state, var) do
+  defp find_head_matches(other, matches = %{pattern: :_}, _state) do
+    %{matches | pattern: other}
+  end
+
+  defp find_head_matches(other, matches, state) do
+    raise CompileError,
+      description:
+        "only one structured pattern match allowed, multiple structured heads found: `#{Macro.to_string(other)}` and `#{Macro.to_string(matches.pattern)}`",
+      file: state.caller.file,
+      line: state.caller.line
+  end
+
+  @spec bind_top_var(atom, t) :: t
+  defp bind_top_var(var, state) do
     if is_map_key(state.bindings, var) do
       IO.warn("unpinned variable `#{var}` in function match head has the same name as a binding")
     end
@@ -136,8 +137,14 @@ defmodule MatchSpec.Fun2ms do
     end
   end
 
-  @spec bind_to(arg_ast, t) :: {head_ast, t}
-  defp bind_to({:^, _, [{var, _, tag}]}, state) when is_atom(tag) do
+  @spec bind_head_match(t, arg_ast) :: t
+  defp bind_head_match(state, arg_ast) do
+    {head_ast, new_state} = translate_arg(arg_ast, state)
+    %{new_state | head: head_ast}
+  end
+
+  @spec translate_arg(arg_ast, t) :: {head_ast, t}
+  defp translate_arg({:^, _, [{var, _, tag}]}, state) when is_atom(tag) do
     vars =
       state.bindings
       |> Map.values()
@@ -155,7 +162,7 @@ defmodule MatchSpec.Fun2ms do
     end
   end
 
-  defp bind_to({var, _, tag}, state) when is_atom(tag) do
+  defp translate_arg({var, _, tag}, state) when is_atom(tag) do
     if String.starts_with?(Atom.to_string(var), "_") do
       {:_, state}
     else
@@ -181,41 +188,41 @@ defmodule MatchSpec.Fun2ms do
   end
 
   # a twople is a special case
-  defp bind_to({a, b}, state) do
-    {match_list, state} = bind_to([a, b], state)
+  defp translate_arg({a, b}, state) do
+    {match_list, state} = translate_arg([a, b], state)
     {List.to_tuple(match_list), state}
   end
 
-  defp bind_to({:{}, _, tuple_list}, state) do
-    {match_list, state} = bind_to(tuple_list, state)
+  defp translate_arg({:{}, _, tuple_list}, state) do
+    {match_list, state} = translate_arg(tuple_list, state)
     {to_tuple_ast(match_list), state}
   end
 
-  defp bind_to(list, state) when is_list(list) do
-    Enum.map_reduce(list, state, &bind_to/2)
+  defp translate_arg(list, state) when is_list(list) do
+    Enum.map_reduce(list, state, &translate_arg/2)
   end
 
-  defp bind_to({:%, _, [aliasing, map]}, state) do
-    {map_part, new_state} = bind_to(map, state)
+  defp translate_arg({:%, _, [aliasing, map]}, state) do
+    {map_part, new_state} = translate_arg(map, state)
     {{:%, [], [aliasing, map_part]}, new_state}
   end
 
-  defp bind_to({:%{}, _, map}, state) do
+  defp translate_arg({:%{}, _, map}, state) do
     {match_list, state} =
       Enum.map_reduce(map, state, fn
         {k, v}, state ->
-          {v_encoded, new_state} = bind_to(v, state)
+          {v_encoded, new_state} = translate_arg(v, state)
           {{k, v_encoded}, new_state}
       end)
 
     {{:%{}, [], match_list}, state}
   end
 
-  defp bind_to(literal, state) when is_number(literal) or is_binary(literal) do
+  defp translate_arg(literal, state) when is_number(literal) or is_binary(literal) do
     {literal, state}
   end
 
-  defp bind_to(atom, state) when is_atom(atom) do
+  defp translate_arg(atom, state) when is_atom(atom) do
     {atom, state}
   end
 

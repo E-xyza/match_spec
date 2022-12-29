@@ -11,20 +11,21 @@ defmodule MatchSpec.Defmatchspec do
   defstruct [:name, :type, :arity, :bindings, :header, :arrows, :caller]
 
   @type t :: %__MODULE__{
-    name: atom,
-    type: :def | :defp,
-    arity: arity(),
-    bindings: [Macro.t],
-    header: Macro.t,
-    arrows: [Macro.t],
-    caller: Macro.Env.t
-  }
+          name: atom,
+          type: :def | :defp,
+          arity: arity(),
+          bindings: [Macro.t()],
+          header: Macro.t(),
+          arrows: [Macro.t()],
+          caller: Macro.Env.t()
+        }
 
   defmacro __before_compile__(env) do
-    matchspec_functions = env.module
-    |> Module.get_attribute(:match_spec_bodies)
-    |> Enum.reverse
-    |> Enum.map(&to_function_body/1)
+    matchspec_functions =
+      env.module
+      |> Module.get_attribute(:match_spec_bodies)
+      |> Enum.reverse()
+      |> Enum.map(&to_function_body/1)
 
     quote do
       require MatchSpec
@@ -68,7 +69,6 @@ defmodule MatchSpec.Defmatchspec do
     prev_body = List.first(previous_bodies)
 
     if prev_body && !signatures_match?(body, prev_body) do
-
       other_type = @other_type[body.type]
       # check to see if we've previously defined it as the opposite type.
       if previous = Enum.find(previous_bodies, &signatures_match?(&1, %{body | type: other_type})) do

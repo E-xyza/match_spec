@@ -3,7 +3,7 @@ defmodule MatchSpecTest.Ms2funTest do
 
   alias MatchSpec.Fun2ms
 
-  defmacrop assert_identity({:fn, _, arrows}) do
+  defmacrop assert_identity(ast = {:fn, _, arrows}) do
     arrows = Macro.escape(arrows)
 
     caller =
@@ -11,7 +11,7 @@ defmodule MatchSpecTest.Ms2funTest do
       |> Macro.Env.prune_compile_info()
       |> Macro.escape()
 
-    quote bind_quoted: [ast: ast, caller: caller] do
+    quote bind_quoted: [ast: Macro.escape(ast), arrows: arrows, caller: caller] do
       result =
         arrows
         |> Fun2ms.from_arrows(caller: caller)
@@ -175,10 +175,6 @@ defmodule MatchSpecTest.Ms2funTest do
 
     test "round works" do
       assert_identity(fn {v1, v2} when round(v2) -> v1 end)
-    end
-
-    test "size works" do
-      assert_identity(fn {v1, v2} when size(v2) -> v1 end)
     end
 
     test "bit_size works" do

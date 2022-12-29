@@ -1,9 +1,15 @@
 defmodule MatchSpecTest.DefmatchspecInterrupted do
   use MatchSpec
 
-  defmatchspec(my_matchspec(:foo)(_), do: true)
+  defmatchspec my_matchspec(:foo) do
+    _ -> true
+  end
 
-  defmatchspec(other_matchspec(:foo)(_), do: true)
+  defmatchspec other_matchspec(:foo) do
+    _ -> true
+  end
 
-  defmatchspec(my_matchspec(:bar)(_), do: true)
+  defmatchspec my_matchspec(:bar) do
+    _ -> true
+  end
 end

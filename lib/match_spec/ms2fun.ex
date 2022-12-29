@@ -97,7 +97,7 @@ defmodule MatchSpec.Ms2fun do
 
   # arity-1 guards
   arity_1_guards =
-    ~w(is_atom is_float is_integer is_list is_number is_pid is_port is_reference is_tuple is_map is_binary is_function not map_size abs hd length round size bit_size byte_size tl trunc)a
+    ~w(is_atom is_float is_integer is_list is_number is_pid is_port is_reference is_tuple is_map is_binary is_function not map_size abs hd length round bit_size byte_size tl trunc)a
 
   for guard <- arity_1_guards do
     defp guard_from_filter({unquote(guard), v1}, state) do
@@ -155,6 +155,11 @@ defmodule MatchSpec.Ms2fun do
       _ ->
         {{:elem, [], [v2_ast, {:-, [], [v1_ast, 1]}]}, new_state}
     end
+  end
+
+  defp guard_from_filter({:size, value}, state) do
+    {value_ast, new_state} = guard_from_filter(value, state)
+    {{{:., [], [:erlang, :size]}, [], [value_ast]}, new_state}
   end
 
   defp guard_from_filter({:const, value}, state), do: {value, state}

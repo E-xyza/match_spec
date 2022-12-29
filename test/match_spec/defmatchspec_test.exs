@@ -17,7 +17,8 @@ defmodule MatchSpecTest.DefmatchspecTest do
     end
 
     test "works with a when in the match" do
-      assert [{{:foo, :"$1"}, [{:is_integer, :"$1"}], [:"$1"]}] == test_def_with_when_in_match(:foo)
+      assert [{{:foo, :"$1"}, [{:is_integer, :"$1"}], [:"$1"]}] ==
+               test_def_with_when_in_match(:foo)
     end
 
     defmatchspec test_def_with_when_in_fn(key) when is_integer(key) do
