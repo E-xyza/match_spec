@@ -28,8 +28,8 @@ defmodule MatchSpec do
   [{{:"$1", :"$2"}, [{:andalso, {:>, :"$2", 1}, {:<, :"$2", 10}}], [:"$_"]}]
   ```
   """
-  defmacro fun2ms(fun_ast) do
-    Fun2ms.from_fun_ast(fun_ast, caller: __CALLER__)
+  defmacro fun2ms({:fn, _, arrows}) do
+    Fun2ms.from_arrows(arrows, caller: __CALLER__)
   end
 
   @doc """
@@ -54,6 +54,10 @@ defmodule MatchSpec do
   ```
   """
   defmacro fun2msfun(type \\ :lambda, name \\ nil, fun_ast, bindings) when is_atom(nil) do
+    arrows = case fun_ast do
+      {:fn, _, arrows} -> arrows
+    end
+
     case type do
       type when type in [:def, :defp] ->
         unless name do
@@ -77,7 +81,7 @@ defmodule MatchSpec do
             line: __CALLER__.line
         end
 
-        ms_ast = Fun2ms.from_fun_ast(fun_ast, bind: bindings, caller: __CALLER__)
+        ms_ast = Fun2ms.from_arrows(arrows, bind: bindings, caller: __CALLER__)
 
         quote do
           unquote(type)(unquote(name)(unquote_splicing(bindings))) do
@@ -108,7 +112,7 @@ defmodule MatchSpec do
             line: __CALLER__.line
         end
 
-        ms_ast = Fun2ms.from_fun_ast(fun_ast, bind: bindings, caller: __CALLER__)
+        ms_ast = Fun2ms.from_arrows(arrows, bind: bindings, caller: __CALLER__)
 
         quote do
           fn unquote_splicing(bindings) ->

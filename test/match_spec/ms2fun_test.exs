@@ -3,8 +3,8 @@ defmodule MatchSpecTest.Ms2funTest do
 
   alias MatchSpec.Fun2ms
 
-  defmacrop assert_identity(ast) do
-    ast = Macro.escape(ast)
+  defmacrop assert_identity({:fn, _, arrows}) do
+    arrows = Macro.escape(arrows)
 
     caller =
       __CALLER__
@@ -13,8 +13,8 @@ defmodule MatchSpecTest.Ms2funTest do
 
     quote bind_quoted: [ast: ast, caller: caller] do
       result =
-        ast
-        |> Fun2ms.from_fun_ast(caller: caller)
+        arrows
+        |> Fun2ms.from_arrows(caller: caller)
         |> Code.eval_quoted([], caller)
         |> elem(0)
         |> MatchSpec.ms2fun(:code)

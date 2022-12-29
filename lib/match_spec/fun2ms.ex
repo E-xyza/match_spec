@@ -34,8 +34,8 @@ defmodule MatchSpec.Fun2ms do
   @typedoc "ast for a function part, which may have come from a lambda definition or a def/defp"
   @type part_ast :: {arg_ast, when_ast, expr_ast}
 
-  @spec from_fun_ast(Macro.t(), keyword) :: Macro.t()
-  def from_fun_ast({:fn, _, arrows}, opts) do
+  @spec from_arrows(Macro.t(), keyword) :: Macro.t()
+  def from_arrows(arrows, opts) do
     Enum.map(arrows, fn arrow ->
       arrow
       |> part_ast_from_arrow

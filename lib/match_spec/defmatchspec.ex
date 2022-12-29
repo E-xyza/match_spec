@@ -4,28 +4,48 @@ defmodule MatchSpec.Defmatchspec do
   # this module contains the (private) struct that is used to keep track of
   # defmatchspec and defmatchspecp definitions
 
+  alias MatchSpec.Fun2ms
+
   # to make debugging less insane
   @derive {Inspect, except: [:caller]}
-  defstruct [:name, :type, :arity, :bindings, :arg_ast, :when_ast, :expr_ast, :caller]
+  defstruct [:name, :type, :arity, :bindings, :header, :arrows, :caller]
+
+  @type t :: %__MODULE__{
+    name: atom,
+    type: :def | :defp,
+    arity: arity(),
+    bindings: [Macro.t],
+    header: Macro.t,
+    arrows: [Macro.t],
+    caller: Macro.Env.t
+  }
 
   defmacro __before_compile__(env) do
-    env.module
+    matchspec_functions = env.module
     |> Module.get_attribute(:match_spec_bodies)
+    |> Enum.reverse
+    |> Enum.map(&to_function_body/1)
 
     quote do
       require MatchSpec
+      unquote(matchspec_functions)
     end
   end
 
-  def struct_from(type, {{name, _, bindings}, _, arg}, expr, caller) do
+  def struct_from(type, header = {:when, _, [name_bindings, _guard]}, arrows, caller) do
+    type
+    |> struct_from(name_bindings, arrows, caller)
+    |> Map.put(:header, header)
+  end
+
+  def struct_from(type, header = {name, _, bindings}, arrows, caller) do
     %__MODULE__{
       name: name,
       type: type,
       arity: length(bindings),
       bindings: bindings,
-      arg_ast: arg,
-      when_ast: [],
-      expr_ast: expr,
+      header: header,
+      arrows: arrows,
       caller: caller
     }
   end
@@ -73,5 +93,15 @@ defmodule MatchSpec.Defmatchspec do
   @signature ~w(name type arity)a
   defp signatures_match?(a, b) do
     Map.take(a, @signature) == Map.take(b, @signature)
+  end
+
+  defp to_function_body(body) do
+    matchspec_ast = Fun2ms.from_arrows(body.arrows, caller: body.caller, bind: body.bindings)
+
+    quote do
+      unquote(body.type)(unquote(body.header)) do
+        unquote(matchspec_ast)
+      end
+    end
   end
 end
