@@ -10,7 +10,7 @@ defmodule MatchSpec.Fun2ms do
           head: nil | head_ast,
           conditions: nil | condition_ast,
           body: nil | body_ast,
-          top_pins: [Macro.t]
+          top_pins: [Macro.t()]
         }
 
   @typedoc "ast for a function argument match"
@@ -153,7 +153,9 @@ defmodule MatchSpec.Fun2ms do
 
   @spec bind_top_var(atom, t) :: t
   # don't bind top vars that are pins of a function variable, but register them as a top pin.
-  defp bind_top_var({:^, _, [pin = {_name, _, tag}]}, state) when is_atom(tag), do: %{state | top_pins: [pin | state.top_pins]}
+  defp bind_top_var({:^, _, [pin = {_name, _, tag}]}, state) when is_atom(tag),
+    do: %{state | top_pins: [pin | state.top_pins]}
+
   # for other top vars:
   defp bind_top_var(var, state) do
     if is_map_key(state.bindings, var) do
@@ -277,6 +279,17 @@ defmodule MatchSpec.Fun2ms do
   end
 
   @spec set_body(t, body_ast) :: t
+  defp set_body(state, block = {:__block__, _, _}) do
+    raise CompileError,
+      description: """
+      function bodies for matchspecs must be a single expression, got:
+
+      #{Macro.to_string(block)}
+      """,
+      file: state.caller.file,
+      line: state.caller.line
+  end
+
   defp set_body(state, body_ast) do
     %{state | body: [expression_from(body_ast, state)]}
   end
@@ -447,7 +460,8 @@ defmodule MatchSpec.Fun2ms do
       state.top_pins,
       &quote bind_quoted: [match: &1] do
         unless is_tuple(match) do
-          raise ArgumentError, "matching against the whole match must be a tuple, got pinned value `#{inspect match}`"
+          raise ArgumentError,
+                "matching against the whole match must be a tuple, got pinned value `#{inspect(match)}`"
         end
       end
     )

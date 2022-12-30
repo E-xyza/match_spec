@@ -9,24 +9,33 @@ defmodule MatchSpecTest.Fun2msErrorTest do
     end
   end
 
-  test "fun2ms rejects having multiple matches that aren't whole variables" do
-    assert_compile_error(
-      "fun2ms_with_multiple_structural_matches.exs",
-      ~r"only one structured pattern match allowed, multiple structured heads found: `{_, _}` and `{_}`"
-    )
-  end
+  describe "fun2ms rejects" do
+    test "having multiple matches that aren't whole variables" do
+      assert_compile_error(
+        "fun2ms_with_multiple_structural_matches.exs",
+        ~r"only one structured pattern match allowed, multiple structured heads found: `{_, _}` and `{_}`"
+      )
+    end
 
-  test "fun2ms rejects arity not 1" do
-    assert_compile_error(
-      "fun2ms_with_wrong_arity.exs",
-      ~r"function branches for matchspecs must have arity 1 \(got arity 2\)"
-    )
-  end
+    test "arity not 1" do
+      assert_compile_error(
+        "fun2ms_with_wrong_arity.exs",
+        ~r"function branches for matchspecs must have arity 1 \(got arity 2\)"
+      )
+    end
 
-  test "fun2ms rejects arity not 1 with a when statement" do
-    assert_compile_error(
-      "fun2ms_with_wrong_arity_and_when.exs",
-      ~r"function branches for matchspecs must have arity 1 \(got arity 2\)"
-    )
+    test "arity not 1 with a when statement" do
+      assert_compile_error(
+        "fun2ms_with_wrong_arity_and_when.exs",
+        ~r"function branches for matchspecs must have arity 1 \(got arity 2\)"
+      )
+    end
+
+    test "not having a singular final expression" do
+      assert_compile_error(
+        "fun2ms_with_nonsingular_return.exs",
+        ~r"function bodies for matchspecs must be a single expression"
+      )
+    end
   end
 end
