@@ -2,14 +2,15 @@ defmodule MatchSpec.Fun2ms do
   @moduledoc false
   # to make debugging less insane
   @derive {Inspect, except: [:caller]}
-  defstruct [:head, :caller, bindings: %{}, conditions: [], body: []]
+  defstruct [:head, :caller, bindings: %{}, conditions: [], body: [], top_pins: []]
 
   @type t :: %__MODULE__{
           caller: Macro.Env.t(),
           bindings: %{optional(atom) => pos_integer | :"$_" | var_ast},
           head: nil | head_ast,
           conditions: nil | condition_ast,
-          body: nil | body_ast
+          body: nil | body_ast,
+          top_pins: [Macro.t]
         }
 
   @typedoc "ast for a function argument match"
@@ -95,6 +96,7 @@ defmodule MatchSpec.Fun2ms do
   @spec to_quoted(t) :: Macro.t()
   defp to_quoted(state) do
     quote do
+      unquote(argument_error_warning(state))
       {unquote(state.head), unquote(state.conditions), unquote(state.body)}
     end
   end
@@ -103,8 +105,8 @@ defmodule MatchSpec.Fun2ms do
     opts
     |> Keyword.get(:bind, [])
     |> Enum.reduce(state, fn
-      binding = {var, _, _atom}, state_so_far ->
-        new_bindings = Map.put(state_so_far.bindings, var, binding)
+      to_bind = {var, _, _atom}, state_so_far ->
+        new_bindings = Map.put(state_so_far.bindings, var, to_bind)
         %{state_so_far | bindings: new_bindings}
 
       # constant values don't trigger registering a binding
@@ -129,6 +131,10 @@ defmodule MatchSpec.Fun2ms do
     Enum.reduce([lhs, rhs], matches, &find_head_matches(&1, &2, state))
   end
 
+  defp find_head_matches(pinned_var = {:^, _, _}, matches, _state) do
+    %{matches | top: [pinned_var | matches.top], pattern: pinned_var}
+  end
+
   defp find_head_matches({name, _, tag}, matches, _state) when is_atom(tag) do
     %{matches | top: [name | matches.top]}
   end
@@ -146,6 +152,9 @@ defmodule MatchSpec.Fun2ms do
   end
 
   @spec bind_top_var(atom, t) :: t
+  # don't bind top vars that are pins of a function variable, but register them as a top pin.
+  defp bind_top_var({:^, _, [pin = {_name, _, tag}]}, state) when is_atom(tag), do: %{state | top_pins: [pin | state.top_pins]}
+  # for other top vars:
   defp bind_top_var(var, state) do
     if is_map_key(state.bindings, var) do
       IO.warn("unpinned variable `#{var}` in function match head has the same name as a binding")
@@ -430,6 +439,19 @@ defmodule MatchSpec.Fun2ms do
   end
 
   defp expression_from(number, _state) when is_number(number), do: number
+
+  # creates argument error if a top-pin variable is not a tuple.
+  @spec argument_error_warning(t) :: Macro.t()
+  defp argument_error_warning(state) do
+    Enum.map(
+      state.top_pins,
+      &quote bind_quoted: [match: &1] do
+        unless is_tuple(match) do
+          raise ArgumentError, "matching against the whole match must be a tuple, got pinned value `#{inspect match}`"
+        end
+      end
+    )
+  end
 
   # UTILITY functions
 

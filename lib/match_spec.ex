@@ -43,6 +43,7 @@ defmodule MatchSpec do
   iex> lambda = MatchSpec.fun2msfun(:lambda, fn {key, value} when key === target -> value end, [target])
   iex> lambda.(:key)
   [{{:"$1", :"$2"}, [{:"=:=", :"$1", :key}], [:"$2"]}]
+  ```
 
   Example (def/defp):
 
@@ -50,7 +51,6 @@ defmodule MatchSpec do
   require MatchSpec
 
   MatchSpec.fun2msfun(:def, :matchspec, fn {key, value} when key == target -> value end, [target])
-  ```
   ```
   """
   defmacro fun2msfun(type \\ :lambda, name \\ nil, fun_ast, bindings) when is_atom(nil) do
