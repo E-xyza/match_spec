@@ -2,7 +2,8 @@ defmodule MatchSpec.Fun2ms do
   @moduledoc false
   # to make debugging less insane
   @derive {Inspect, except: [:caller]}
-  defstruct [:head, :caller, bindings: %{}, conditions: [], body: [], top_pins: []]
+  @enforce_keys [:caller]
+  defstruct @enforce_keys ++ [:head, bindings: %{}, conditions: [], body: [], top_pins: [], in: :arg]
 
   @type t :: %__MODULE__{
           caller: Macro.Env.t(),
@@ -10,8 +11,13 @@ defmodule MatchSpec.Fun2ms do
           head: nil | head_ast,
           conditions: nil | condition_ast,
           body: nil | body_ast,
-          top_pins: [Macro.t()]
+          top_pins: [Macro.t()],
+          # which phase of analysis we're in:
+          in: :arg | :when | :expr
         }
+
+  # these types represent ast types that correspond to the elixir ast of the function in
+  # elixir fn-style lambda format.
 
   @typedoc "ast for a function argument match"
   @type arg_ast :: Macro.t()
@@ -275,14 +281,14 @@ defmodule MatchSpec.Fun2ms do
 
   @spec set_condition(t, when_ast) :: t
   defp set_condition(state, when_ast) do
-    %{state | conditions: Enum.map(when_ast, &expression_from(&1, state))}
+    %{state | conditions: Enum.map(when_ast, &expression_from(&1, %{state | in: :when}))}
   end
 
   @spec set_body(t, body_ast) :: t
   defp set_body(state, block = {:__block__, _, _}) do
     raise CompileError,
       description: """
-      function bodies for matchspecs must be a single expression, got:
+      function bodies for matchspecs must be a single result expression, got:
 
       #{Macro.to_string(block)}
       """,
@@ -291,7 +297,7 @@ defmodule MatchSpec.Fun2ms do
   end
 
   defp set_body(state, body_ast) do
-    %{state | body: [expression_from(body_ast, state)]}
+    %{state | body: [expression_from(body_ast, %{state | in: :expr})]}
   end
 
   @spec expression_from(when_ast | expr_ast, t) :: condition_ast | body_ast
@@ -452,6 +458,16 @@ defmodule MatchSpec.Fun2ms do
   end
 
   defp expression_from(number, _state) when is_number(number), do: number
+
+  @part_name %{when: "when clause", expr: "result expression"}
+
+  defp expression_from(non_guard = {_, _, args}, state) when is_list(args) do
+    part_name = Map.fetch!(@part_name, state.in)
+    raise CompileError,
+      description: "non-guard function found in #{part_name}: `#{Macro.to_string(non_guard)}`",
+      file: state.caller.file,
+      line: state.caller.line
+  end
 
   # creates argument error if a top-pin variable is not a tuple.
   @spec argument_error_warning(t) :: Macro.t()

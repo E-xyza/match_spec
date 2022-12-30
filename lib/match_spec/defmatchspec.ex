@@ -8,7 +8,8 @@ defmodule MatchSpec.Defmatchspec do
 
   # to make debugging less insane
   @derive {Inspect, except: [:caller]}
-  defstruct [:name, :type, :arity, :bindings, :header, :arrows, :caller]
+  @enforce_keys [:name, :type, :arity, :bindings, :header, :arrows, :caller]
+  defstruct @enforce_keys
 
   @type t :: %__MODULE__{
           name: atom,

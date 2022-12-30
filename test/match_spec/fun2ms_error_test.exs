@@ -34,7 +34,21 @@ defmodule MatchSpecTest.Fun2msErrorTest do
     test "not having a singular final expression" do
       assert_compile_error(
         "fun2ms_with_nonsingular_return.exs",
-        ~r"function bodies for matchspecs must be a single expression"
+        ~r"function bodies for matchspecs must be a single result expression"
+      )
+    end
+
+    test "a non-guard function in the when clause" do
+      assert_compile_error(
+        "fun2ms_with_nonguard_in_when.exs",
+        ~r"non-guard function found in when clause: `Process.get\(:bar\)`"
+      )
+    end
+
+    test "a non-guard function in the body clause" do
+      assert_compile_error(
+        "fun2ms_with_nonguard_in_body.exs",
+        ~r"non-guard function found in result expression: `Process.get\(:bar\)`"
       )
     end
   end
