@@ -377,7 +377,8 @@ defmodule MatchSpec.Fun2ms do
         <=: {:"=<", 2},
         ===: {:"=:=", 2},
         !=: {:"/=", 2},
-        !==: {:"=/=", 2}
+        !==: {:"=/=", 2},
+        when: {:orelse, 2} # multiple when clauses in a match are equivalent to "or" 🤯
       ] do
     defp expression_from({unquote(exguard), _, args}, state)
          when length(args) == unquote(arity) do

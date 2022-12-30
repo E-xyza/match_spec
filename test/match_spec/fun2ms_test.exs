@@ -292,6 +292,11 @@ defmodule MatchSpecTest.Fun2msTest do
       assert [{{:"$1"}, [{:orelse, {:"=:=", :"$1", :foo}, {:"=:=", :"$1", :bar}}], [true]}] ==
         MatchSpec.fun2ms(fn {a} when a in [:foo, :bar] -> true end)
     end
+
+    test "multiple when clauses are interpreted as orelse clauses" do
+      assert [{{:"$1"}, [{:orelse, {:"=:=", :"$1", :foo}, {:"=:=", :"$1", :bar}}], [true]}] ==
+        MatchSpec.fun2ms(fn {a} when a === :foo when a === :bar -> true end)
+    end
   end
 
   describe "result expressions" do
