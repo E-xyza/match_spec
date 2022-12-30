@@ -466,11 +466,9 @@ defmodule MatchSpec.Fun2ms do
   defp expression_from(number, _state) when is_number(number), do: number
 
   @part_name %{when: "when clause", expr: "result expression"}
-  @context_for %{when: :guard, expr: :match}
 
   defp expression_from(call = {_, _, args}, state) when is_list(args) do
-    expansion_context = Map.fetch!(@context_for, state.in)
-    case Macro.expand(call, %{state.caller | context: expansion_context}) do
+    case Macro.expand(call, %{state.caller | context: :guard}) do
       ^call ->
         part_name = Map.fetch!(@part_name, state.in)
         raise CompileError,

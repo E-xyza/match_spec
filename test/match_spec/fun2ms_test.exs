@@ -309,5 +309,15 @@ defmodule MatchSpecTest.Fun2msTest do
       assert [{{:"$1", :"$2"}, [], [%MyStruct{key: :"$1", value: :"$2"}]}] ==
                MatchSpec.fun2ms(fn {a, b} -> %MyStruct{key: a, value: b} end)
     end
+
+    test "builtin custom guards work" do
+      assert [{{:"$1"}, [], [{:andalso, {:is_integer, :"$1"}, {:==, {:band, :"$1", 1}, 0}}]}] ==
+        MatchSpec.fun2ms(fn {a} -> Integer.is_even(a) end)
+    end
+
+    test "local custom guards work" do
+      assert [{{:"$1"}, [], [{:"=:=", :"$1", 5}]}] ==
+        MatchSpec.fun2ms(fn {a} -> is_five(a) end)
+    end
   end
 end
