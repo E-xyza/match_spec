@@ -398,6 +398,12 @@ defmodule MatchSpec.Fun2ms do
         map_get: 2,
         andalso: 2,
         orelse: 2,
+        band: 2,
+        bor: 2,
+        bxor: 2,
+        bnot: 2,
+        bsl: 2,
+        bsr: 2,
         "=<": 2,
         "=:=": 2,
         "/=": 2,
@@ -460,13 +466,20 @@ defmodule MatchSpec.Fun2ms do
   defp expression_from(number, _state) when is_number(number), do: number
 
   @part_name %{when: "when clause", expr: "result expression"}
+  @context_for %{when: :guard, expr: :match}
 
-  defp expression_from(non_guard = {_, _, args}, state) when is_list(args) do
-    part_name = Map.fetch!(@part_name, state.in)
-    raise CompileError,
-      description: "non-guard function found in #{part_name}: `#{Macro.to_string(non_guard)}`",
-      file: state.caller.file,
-      line: state.caller.line
+  defp expression_from(call = {_, _, args}, state) when is_list(args) do
+    expansion_context = Map.fetch!(@context_for, state.in)
+    case Macro.expand(call, %{state.caller | context: expansion_context}) do
+      ^call ->
+        part_name = Map.fetch!(@part_name, state.in)
+        raise CompileError,
+          description: "non-guard function found in #{part_name}: `#{Macro.to_string(call)}`",
+          file: state.caller.file,
+          line: state.caller.line
+      guard ->
+        expression_from(guard, state)
+    end
   end
 
   # creates argument error if a top-pin variable is not a tuple.

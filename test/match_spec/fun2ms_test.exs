@@ -17,6 +17,10 @@ defmodule MatchSpecTest.Fun2msTest do
     defstruct [:key, :value]
   end
 
+  # for guards
+  require Integer
+  defguardp is_five(x) when x === 5
+
   describe "matching" do
     test "a twople works" do
       assert [{{:"$1", :"$2"}, [], [:"$1"]}] == MatchSpec.fun2ms(fn {a, b} -> a end)
@@ -273,9 +277,19 @@ defmodule MatchSpecTest.Fun2msTest do
       assert [{{:"$1"}, [:"$1"], [:"$1"]}] ==
                MatchSpec.fun2ms(fn {a} when a -> a end)
     end
+
+    test "builtin custom guards work" do
+      assert [{{:"$1"}, [{:andalso, {:is_integer, :"$1"}, {:==, {:band, :"$1", 1}, 0}}], [:"$1"]}] ==
+        MatchSpec.fun2ms(fn {a} when Integer.is_even(a) -> a end)
+    end
+
+    test "local custom guards work" do
+      assert [{{:"$1"}, [{:"=:=", :"$1", 5}], [true]}] ==
+        MatchSpec.fun2ms(fn {a} when is_five(a) -> true end)
+    end
   end
 
-  describe "bodies" do
+  describe "result expressions" do
     test "can output arbitrary bindings" do
       assert [{{:"$1", :"$2", :"$3"}, [], [:"$3"]}] ==
                MatchSpec.fun2ms(fn {a, b, c} -> c end)
