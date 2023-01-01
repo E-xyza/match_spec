@@ -10,7 +10,7 @@ defmodule MatchSpec.MixProject do
       deps: deps(),
       description: "helper module for match specs",
       package: package(),
-      source_url: "https://github.com/ityonemo/match_spec",
+      source_url: "https://github.com/e-xyza/match_spec",
       docs: [
         main: "MatchSpec",
         extras: ["README.md"]
