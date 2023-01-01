@@ -63,9 +63,11 @@ defmodule MatchSpecTest.Fun2msfunTest do
     end
 
     test "fails preflight check if you pass a too-short string into binary-pinned content" do
-      assert_raise ArgumentError, "the variable `a` is expected to have length at least 4, got 3", fn ->
-        fun2msfun(fn {<<^a::binary-size(4)>>} -> true end, [a]).("foo")
-      end
+      assert_raise ArgumentError,
+                   "the variable `a` is expected to have length at least 4, got 3",
+                   fn ->
+                     fun2msfun(fn {<<^a::binary-size(4)>>} -> true end, [a]).("foo")
+                   end
     end
   end
 

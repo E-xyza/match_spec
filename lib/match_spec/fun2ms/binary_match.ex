@@ -1,4 +1,5 @@
 defmodule MatchSpec.Fun2ms.BinaryMatch do
+  @moduledoc false
   alias MatchSpec.Fun2ms.Head
   alias MatchSpec.Tools
 

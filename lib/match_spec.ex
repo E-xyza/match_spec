@@ -2,7 +2,33 @@ defmodule MatchSpec do
   @moduledoc """
   Elixir module to help you write matchspecs.
 
-  contains functions which transform elixir-style functions into erlang matchspecs, and vice versa.
+  contains functions which transform elixir-style functions into erlang matchspecs,
+  and vice versa.
+
+  ### Functions to matchspecs
+
+  For transforming elixir-style functions into matchspecs, the following
+  restrictions apply:
+
+  - The function must use the `Kernel.fn/1` macro as its form, or use `defmatchspec/2`
+    or `defmatchspec/3`, where the matchspecs form is similar to the `Kernel.fn/1` form.any()
+  - The function must have arity 1.
+  - The function may only use guards in its `when` section.
+  - The function may only return a single expression that uses guard functions to
+    transform matches.
+
+  Furthermore, the following restrictions apply to binary pattern matching in the
+  head of the function
+
+  - the binary pattern may only consist of single bytes and strings
+    - arbitrary bit-width bitstrings are not supported
+    - conversions such as float are not supported.
+
+  > #### Note {: .info}
+  >
+  > The restrictions on binary matching exist due to limitations on the BIFs
+  > available to ets and may change in the future if OTP comes to support
+  > these conversions in its kernel.
   """
 
   alias MatchSpec.Defmatchspec
@@ -12,24 +38,37 @@ defmodule MatchSpec do
   @doc """
   converts a function ast into an ets matchspec.
 
-  The function must have arity one, and may only have one clause which results in a
-  return value.  Only builtin guard clauses are supported.
-
   The function must also be "`fn` ast"; you can't pass a shorthand lambda or
   a lambda to an existing lambda.
 
-  The function lambda form is only used as a scaffolding to represent ets matching
-  and filtering operations, it will not be instantiated into bytecode of the
-  resulting module.
+  The function lambda form is only used as a scaffolding to represent ets
+  matching and filtering operations, by default it will not be instantiated
+  into bytecode of the resulting module.
 
   ```elixir
   iex> require MatchSpec
   iex> MatchSpec.fun2ms(fn tuple = {k, v} when v > 1 and v < 10 -> tuple end)
   [{{:"$1", :"$2"}, [{:andalso, {:>, :"$2", 1}, {:<, :"$2", 10}}], [:"$_"]}]
   ```
+
+  If you would also like the equivalent lambda, pass `with_fun: true` as an
+  option and the `fun2ms/2` macro will emit a tuple of the matchspec and the
+  lambda.
+
+  ```elixir
+  iex> {ms, fun} = MatchSpec.fun2ms(fn {:key, value} -> value end, with_fun: true)
+  iex> :ets.test_ms({:key, "value"}, ms)
+  {:ok, "value"}
+  iex> fun.({:key, "value"})
+  "value"
+  ```
+
+  This macro uses the same backend as `fun2msfun/4` and will emit the same
+  matchspec as if you passed no parameters to `fun2msfun/4`
   """
   defmacro fun2ms(fun = {:fn, _, arrows}, opts \\ []) do
     matchspec = Fun2ms.from_arrows(arrows, caller: __CALLER__)
+
     if Keyword.get(opts, :with_fun) do
       {matchspec, fun}
     else
@@ -42,12 +81,12 @@ defmodule MatchSpec do
   bindings.  This can be used to either create an named function or an
   anonymous function.
 
-  if you would like to use one of the free variables in your lambda as a part
+  if you would like to use one of the free variables in your function as a part
   of the head of the match, you must pin it.
 
-  if you omit the first parameter, it's assumed to create a `lambda`.
+  if you omit the first parameter, it will create an anonymous function.
 
-  Example (lambda, default):
+  Example with `:lambda` (default):
 
   ```elixir
   iex> require MatchSpec
@@ -59,7 +98,7 @@ defmodule MatchSpec do
   [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, :key}}], [:"$2"]}]
   ```
 
-  Example (def/defp):
+  Example with (`:def`/`:defp`):
 
   ```elixir
   require MatchSpec
@@ -144,16 +183,20 @@ defmodule MatchSpec do
   end
 
   @doc """
-  Writes a matchspec-generating function based on a body.  You may provide multiple function bodies.
-  This is syntactic sugar for using matchspec
+  Writes a matchspec-generating function based on a body.
+
+  You may provide multiple function bodies.
+
+  This macro uses the same backend as `fun2msfun/4` and will generate
+  identical code to that macro.
 
   Example:
 
   ```elixir
   use MatchSpec
 
-  defmatchspec my_matchspec(value1, value2)({key, value1, value}) when key === :foo do
-    value == value2
+  defmatchspec my_matchspec(value1, value2) do
+    {key, ^value1, ^value} when key === :foo -> value == value2
   end
   ```
 
@@ -161,8 +204,9 @@ defmodule MatchSpec do
 
   ```elixir
   def my_matchspec(value1, value2) do
-    [{:"$1", value1, :"$2"}, [{:"=:=", :"$1", :foo}], [{:==, :"$2", {:const, value2}}]]
+    [{:"$1", :"$2", :"$3"}, [{:"=:=", :"$1", :foo}, {:"=:=", :"$2", value1}], [{:==, :"$3", {:const, value2}}]]
   end
+  ```
   """
   defmacro defmatchspec(header, do: expr) do
     Defmatchspec.assert_used(__CALLER__, :defmatchspec)
@@ -179,25 +223,15 @@ defmodule MatchSpec do
   end
 
   @doc """
-  Writes a matchspec-generating function based on a body.  You may provide multiple function bodies.
-  This is syntactic sugar for using matchspec
+  Writes a matchspec-generating function based on a body.
 
-  Example:
+  You may provide multiple function bodies.
 
-  ```elixir
-  use MatchSpec
+  This macro uses the same backend as `fun2msfun/4` and will generate
+  identical code.
 
-  defmatchspec my_matchspec(value1, value2)({key, value1, value}) when key === :foo do
-    value == value2
-  end
-  ```
+  see `defmatchspec/2` for details
 
-  This generates the equivalent to the following function:
-
-  ```elixir
-  def my_matchspec(value1, value2) do
-    [{:"$1", value1, :"$2"}, [{:"=:=", :"$1", :foo}], [{:==, :"$2", {:const, value2}}]]
-  end
   """
   defmacro defmatchspecp(header, do: expr) do
     Defmatchspec.assert_used(__CALLER__, :defmatchspecp)
