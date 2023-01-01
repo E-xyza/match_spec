@@ -2,6 +2,7 @@ defmodule MatchSpec.Fun2ms do
   @moduledoc false
   alias MatchSpec.Fun2ms.Head
   alias MatchSpec.Tools
+  import Tools
 
   # to make debugging less insane
   @derive {Inspect, except: [:caller]}
@@ -12,9 +13,10 @@ defmodule MatchSpec.Fun2ms do
   @type t :: %__MODULE__{
           caller: Macro.Env.t(),
           bindings: Tools.bindings(),
+          pins: Tools.pins(),
           head: nil | head_ast,
-          conditions: nil | condition_ast,
-          body: nil | body_ast,
+          conditions: [condition_ast],
+          body: [body_ast],
           # which phase of analysis we're in:
           in: :arg | :when | :expr
         }
@@ -290,8 +292,11 @@ defmodule MatchSpec.Fun2ms do
       int when is_integer(int) ->
         :"$#{int}"
 
-      variable = {_, _, _} ->
-        {:const, variable}
+      var when is_var_ast(var) ->
+        {:const, var}
+
+      part = {:{}, _, [:binary_part | _]} ->
+        part
     end
   end
 
@@ -364,27 +369,5 @@ defmodule MatchSpec.Fun2ms do
         )
       end
     )
-  end
-
-  # UTILITY functions
-
-  # two-tuples are special cases.
-  defp to_tuple_ast(tuple = {_, _}), do: tuple
-
-  defp to_tuple_ast(tuple) when is_tuple(tuple) do
-    {:{}, [], Tuple.to_list(tuple)}
-  end
-
-  defp to_tuple_ast(list) when is_list(list) do
-    {:{}, [], list}
-  end
-
-  defp tuple_wrap(tuple_parts) do
-    tuple_parts
-    |> List.to_tuple()
-    |> to_tuple_ast
-    |> List.wrap()
-    |> List.to_tuple()
-    |> to_tuple_ast
   end
 end

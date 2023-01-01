@@ -23,6 +23,38 @@ defmodule MatchSpecTest.Fun2msfunTest do
       assert [{:_, [], [{:const, :foo}]}] ==
                fun2msfun(fn _ -> output end, [output]).(:foo)
     end
+
+    test "you can match a string with a fixed size" do
+      assert [
+               {{:"$1"}, [{:"=:=", {:binary_part, :"$1", 0, 3}, {:const, "foo"}}],
+                [{:binary_part, :"$1", 3, {:-, {:byte_size, :"$1"}, 3}}]}
+             ] ==
+               fun2msfun(fn {<<^v::binary-size(3), rest::binary>>} -> rest end, [v]).("foo")
+    end
+
+    test "you can match a string with a variable size" do
+      assert [
+               {{:"$1"}, [{:"=:=", {:binary_part, :"$1", 0, 3}, {:const, "foo"}}],
+                [{:binary_part, :"$1", 3, {:-, {:byte_size, :"$1"}, 3}}]}
+             ] ==
+               fun2msfun(fn {<<^v::binary-size(byte_size(v)), rest::binary>>} -> rest end, [v]).(
+                 "foo"
+               )
+    end
+
+    test "you can match a string with a prefix and a variable size" do
+      assert [
+               {{:"$1"},
+                [
+                  {:"=:=", {:binary_part, :"$1", 0, 3}, {:const, "foo"}},
+                  {:"=:=", {:binary_part, :"$1", 3, 3}, {:const, "bar"}}
+                ], [{:binary_part, :"$1", 6, {:-, {:byte_size, :"$1"}, 6}}]}
+             ] ==
+               fun2msfun(
+                 fn {<<"foo", ^v::binary-size(byte_size(v)), rest::binary>>} -> rest end,
+                 [v]
+               ).("bar")
+    end
   end
 
   describe "for fun2msfun function builder" do

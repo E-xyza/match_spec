@@ -248,12 +248,4 @@ defmodule MatchSpec do
       import MatchSpec, only: [defmatchspec: 2, defmatchspecp: 2]
     end
   end
-
-  def _macro_inspect(macro) do
-    macro
-    |> Macro.to_string()
-    |> IO.puts()
-
-    macro
-  end
 end

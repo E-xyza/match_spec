@@ -309,6 +309,45 @@ defmodule MatchSpecTest.Fun2msTest do
     end
   end
 
+  describe "matching on binaries" do
+    test "matching on extended binaries works" do
+      assert [
+               {{:"$1"}, [{:"=:=", {:binary_part, :"$1", 0, 3}, {:const, "foo"}}],
+                [{:binary_part, :"$1", 3, {:-, {:byte_size, :"$1"}, 3}}]}
+             ] = MatchSpec.fun2ms(fn {<<"foo", a::binary>>} -> a end)
+    end
+
+    test "matching on multiple extended binaries works" do
+      assert [
+               {{:"$1"},
+                [
+                  {:"=:=", {:binary_part, :"$1", 0, 3}, {:const, "foo"}},
+                  {:"=:=", {:binary_part, :"$1", 3, 3}, {:const, "bar"}}
+                ], [{:binary_part, :"$1", 6, {:-, {:byte_size, :"$1"}, 6}}]}
+             ] = MatchSpec.fun2ms(fn {<<"foo", "bar", a::binary>>} -> a end)
+    end
+
+    test "extra binary specifier on a string literal" do
+      assert [
+               {{:"$1"}, [{:"=:=", {:binary_part, :"$1", 0, 3}, {:const, "foo"}}],
+                [{:binary_part, :"$1", 3, {:-, {:byte_size, :"$1"}, 3}}]}
+             ] = MatchSpec.fun2ms(fn {<<"foo"::binary, a::binary>>} -> a end)
+    end
+
+    # note that this layout is extended into the above layout using `Macro.expand/2`
+    # so it should generally work if everything above works.
+    test "matching on binaries works" do
+      assert [
+               {
+                 {:"$1"},
+                 [{:"=:=", {:binary_part, :"$1", 0, 3}, {:const, "foo"}}],
+                 [{:binary_part, :"$1", 3, {:-, {:byte_size, :"$1"}, 3}}]
+               }
+             ] ==
+               MatchSpec.fun2ms(fn {"foo" <> a} -> a end)
+    end
+  end
+
   describe "result expressions" do
     test "can output arbitrary bindings" do
       assert [{{:"$1", :"$2", :"$3"}, [], [:"$3"]}] ==

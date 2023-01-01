@@ -2,19 +2,20 @@ defmodule MatchSpec.Fun2ms.Head do
   @moduledoc false
 
   alias MatchSpec.Tools
+  alias MatchSpec.Fun2ms.StringMatch
   import Tools
 
   # to make debugging less insane
   @derive {Inspect, except: [:caller]}
-  @enforce_keys [:caller]
-  defstruct @enforce_keys ++ [:top_pin, :arg_match_ast, head_ast: :_, bindings: [], pins: %{}]
+  @enforce_keys [:caller, :bindings]
+  defstruct @enforce_keys ++ [:top_pin, :arg_match_ast, head_ast: :_, pins: %{}]
 
   @type state :: %__MODULE__{
           head_ast: Macro.t(),
           # the ast of whatever code resulted in head_ast
           arg_match_ast: nil | Macro.t(),
           top_pin: nil | Tools.var_ast(),
-          pins: %{optional(atom) => Tools.var_ast()},
+          pins: Tools.pins(),
           caller: Macro.Env.t(),
           bindings: Tools.bindings()
         }
@@ -137,6 +138,17 @@ defmodule MatchSpec.Fun2ms.Head do
     {List.to_tuple(head_ast_list), new_state}
   end
 
+  def parse_structured(ast = {:<>, _, _}, state) do
+    # convert <> operators to <<>> operations
+    ast
+    |> Macro.expand(state.caller)
+    |> parse_structured(state)
+  end
+
+  def parse_structured({:<<>>, _, parts}, state) do
+    StringMatch.from_parts(parts, state)
+  end
+
   # general call structures
   def parse_structured({call, meta, args}, state) do
     {head_ast_list, new_state} = Enum.map_reduce(args, state, &parse_structured/2)
@@ -200,14 +212,6 @@ defmodule MatchSpec.Fun2ms.Head do
     :ok
   end
 
-  defp binding_list(bindings) do
-    bindings
-    |> Enum.flat_map(fn {key, value} ->
-      List.wrap(if is_var_ast(value), do: "#{key}")
-    end)
-    |> inspect
-  end
-
   @spec maybe_new_binding_for(atom, state) :: non_neg_integer
   defp maybe_new_binding_for(name, %{bindings: bindings}) do
     case bindings do
@@ -227,7 +231,7 @@ defmodule MatchSpec.Fun2ms.Head do
   end
 
   @spec lowest_index(Tools.bindings()) :: non_neg_integer
-  defp lowest_index(bindings) do
+  def lowest_index(bindings) do
     bindings
     |> Map.values()
     |> Enum.reject(&(match?({_, _, _}, &1) or &1 == :"$_"))
