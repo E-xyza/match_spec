@@ -30,6 +30,35 @@ defmodule MatchSpec.Fun2ms.Head do
     Enum.reduce(matches, state, &parse_top/2)
   end
 
+  # disallowed top types: struct, map, list, binary
+  def parse_top(top = {:%, _, _}, %{caller: caller}) do
+    raise CompileError,
+      description: "top match cannot be a struct (got: #{Macro.to_string(top)})",
+      file: caller.file,
+      line: caller.line
+  end
+
+  def parse_top(top = {:%{}, _, _}, %{caller: caller}) do
+    raise CompileError,
+      description: "top match cannot be a map (got: #{Macro.to_string(top)})",
+      file: caller.file,
+      line: caller.line
+  end
+
+  def parse_top(top, %{caller: caller}) when is_list(top) do
+    raise CompileError,
+      description: "top match cannot be a list (got: #{Macro.to_string(top)})",
+      file: caller.file,
+      line: caller.line
+  end
+
+  def parse_top(top = {:<<>>, _, _}, %{caller: caller}) do
+    raise CompileError,
+      description: "top match cannot be a binary (got: #{Macro.to_string(top)})",
+      file: caller.file,
+      line: caller.line
+  end
+
   def parse_top(head_ast = {:^, _, [var]}, state)
       when is_var_ast(var) do
     name = var_name(var)
@@ -186,7 +215,10 @@ defmodule MatchSpec.Fun2ms.Head do
         value
 
       %{^name => tuple} when is_tuple(tuple) ->
-        IO.warn("unpinned variable `#{name}` in function match head has the same name as a binding")
+        IO.warn(
+          "unpinned variable `#{name}` in function match head has the same name as a binding"
+        )
+
         lowest_index(bindings)
 
       _ ->

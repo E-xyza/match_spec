@@ -51,5 +51,33 @@ defmodule MatchSpecTest.Fun2msErrorTest do
         ~r"non-guard function found in result expression: `Process.get\(:bar\)`"
       )
     end
+
+    test "top level matches on lists error" do
+      assert_compile_error(
+        "fun2ms_with_list_match.exs",
+        ~r"top match cannot be a list \(got: \[a\]\)"
+      )
+    end
+
+    test "top level matches on maps error" do
+      assert_compile_error(
+        "fun2ms_with_map_match.exs",
+        ~r"top match cannot be a map \(got: %{foo: a}\)"
+      )
+    end
+
+    test "top level matches on structs error" do
+      assert_compile_error(
+        "fun2ms_with_struct_match.exs",
+        ~r"top match cannot be a struct \(got: %Range{start: a}\)"
+      )
+    end
+
+    test "top level matches on binaries error" do
+      assert_compile_error(
+        "fun2ms_with_binary_match.exs",
+        ~r"top match cannot be a binary \(got: <<_>>\)"
+      )
+    end
   end
 end

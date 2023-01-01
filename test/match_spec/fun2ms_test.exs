@@ -300,7 +300,12 @@ defmodule MatchSpecTest.Fun2msTest do
 
     test "dot syntax for map_get works" do
       assert [{{:"$1"}, [{:map_get, :b, :"$1"}], [true]}] ==
-        MatchSpec.fun2ms(fn {a} when a.b -> true end)
+               MatchSpec.fun2ms(fn {a} when a.b -> true end)
+    end
+
+    test "strange lists work" do
+      assert [{{[:"$1" | :"$2"]}, [], [{{:"$1", :"$2"}}]}] ==
+               MatchSpec.fun2ms(fn {[a | b]} -> {a, b} end)
     end
   end
 
