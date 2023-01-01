@@ -28,8 +28,13 @@ defmodule MatchSpec do
   [{{:"$1", :"$2"}, [{:andalso, {:>, :"$2", 1}, {:<, :"$2", 10}}], [:"$_"]}]
   ```
   """
-  defmacro fun2ms({:fn, _, arrows}) do
-    Fun2ms.from_arrows(arrows, caller: __CALLER__)
+  defmacro fun2ms(fun = {:fn, _, arrows}, opts \\ []) do
+    matchspec = Fun2ms.from_arrows(arrows, caller: __CALLER__)
+    if Keyword.get(opts, :with_fun) do
+      {matchspec, fun}
+    else
+      matchspec
+    end
   end
 
   @doc """
