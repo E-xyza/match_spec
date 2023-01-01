@@ -33,8 +33,14 @@ defmodule MatchSpec do
   end
 
   @doc """
-  converts a function into a function that generates a match spec based on bindings.  This can
-  be used to either create an named function or an anonymous function.
+  converts a function into a function that generates a match spec based on
+  bindings.  This can be used to either create an named function or an
+  anonymous function.
+
+  if you would like to use one of the free variables in your lambda as a part
+  of the head of the match, you must pin it.
+
+  if you omit the first parameter, it's assumed to create a `lambda`.
 
   Example (lambda, default):
 
@@ -42,7 +48,10 @@ defmodule MatchSpec do
   iex> require MatchSpec
   iex> lambda = MatchSpec.fun2msfun(:lambda, fn {key, value} when key === target -> value end, [target])
   iex> lambda.(:key)
-  [{{:"$1", :"$2"}, [{:"=:=", :"$1", :key}], [:"$2"]}]
+  [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, :key}}], [:"$2"]}]
+  iex> lambda2 = MatchSpec.fun2msfun(fn {^key, value} -> value end, [key])
+  iex> lambda2.(:key)
+  [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, :key}}], [:"$2"]}]
   ```
 
   Example (def/defp):

@@ -20,7 +20,7 @@ defmodule MatchSpecTest.Fun2msfunErrorTest do
     test "if you have an undefined pin" do
       assert_compile_error(
         "fun2msfun_with_undefined_pin.exs",
-        ~r/pin requires a bound variable \(got undefined, found: \[\]\)$/
+        ~r/pin requires a bound variable \(got `undefined`, found: \[\]\)$/
       )
     end
   end

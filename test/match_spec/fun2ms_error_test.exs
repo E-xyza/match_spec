@@ -13,7 +13,7 @@ defmodule MatchSpecTest.Fun2msErrorTest do
     test "having multiple matches that aren't whole variables" do
       assert_compile_error(
         "fun2ms_with_multiple_structural_matches.exs",
-        ~r"only one structured pattern match allowed, multiple structured heads found: `{_, _}` and `{_}`"
+        ~r"only one structured pattern match allowed in the head, multiple patterns found: `{_}` and `{_, _}`"
       )
     end
 

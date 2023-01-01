@@ -280,22 +280,22 @@ defmodule MatchSpecTest.Fun2msTest do
 
     test "builtin custom guards work" do
       assert [{{:"$1"}, [{:andalso, {:is_integer, :"$1"}, {:==, {:band, :"$1", 1}, 0}}], [:"$1"]}] ==
-        MatchSpec.fun2ms(fn {a} when Integer.is_even(a) -> a end)
+               MatchSpec.fun2ms(fn {a} when Integer.is_even(a) -> a end)
     end
 
     test "local custom guards work" do
       assert [{{:"$1"}, [{:"=:=", :"$1", 5}], [true]}] ==
-        MatchSpec.fun2ms(fn {a} when is_five(a) -> true end)
+               MatchSpec.fun2ms(fn {a} when is_five(a) -> true end)
     end
 
     test "the special guard `in` works" do
       assert [{{:"$1"}, [{:orelse, {:"=:=", :"$1", :foo}, {:"=:=", :"$1", :bar}}], [true]}] ==
-        MatchSpec.fun2ms(fn {a} when a in [:foo, :bar] -> true end)
+               MatchSpec.fun2ms(fn {a} when a in [:foo, :bar] -> true end)
     end
 
     test "multiple when clauses are interpreted as orelse clauses" do
       assert [{{:"$1"}, [{:orelse, {:"=:=", :"$1", :foo}, {:"=:=", :"$1", :bar}}], [true]}] ==
-        MatchSpec.fun2ms(fn {a} when a === :foo when a === :bar -> true end)
+               MatchSpec.fun2ms(fn {a} when a === :foo when a === :bar -> true end)
     end
   end
 
@@ -322,12 +322,12 @@ defmodule MatchSpecTest.Fun2msTest do
 
     test "builtin custom guards work" do
       assert [{{:"$1"}, [], [{:andalso, {:is_integer, :"$1"}, {:==, {:band, :"$1", 1}, 0}}]}] ==
-        MatchSpec.fun2ms(fn {a} -> Integer.is_even(a) end)
+               MatchSpec.fun2ms(fn {a} -> Integer.is_even(a) end)
     end
 
     test "local custom guards work" do
       assert [{{:"$1"}, [], [{:"=:=", :"$1", 5}]}] ==
-        MatchSpec.fun2ms(fn {a} -> is_five(a) end)
+               MatchSpec.fun2ms(fn {a} -> is_five(a) end)
     end
   end
 end

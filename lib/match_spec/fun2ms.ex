@@ -1,17 +1,20 @@
 defmodule MatchSpec.Fun2ms do
   @moduledoc false
+  alias MatchSpec.Fun2ms.Head
+  alias MatchSpec.Tools
+
   # to make debugging less insane
   @derive {Inspect, except: [:caller]}
   @enforce_keys [:caller]
-  defstruct @enforce_keys ++ [:head, bindings: %{}, conditions: [], body: [], top_pins: [], in: :arg]
+  defstruct @enforce_keys ++
+              [:head, bindings: %{}, conditions: [], body: [], pins: %{}, in: :arg]
 
   @type t :: %__MODULE__{
           caller: Macro.Env.t(),
-          bindings: %{optional(atom) => pos_integer | :"$_" | var_ast},
+          bindings: Tools.bindings(),
           head: nil | head_ast,
           conditions: nil | condition_ast,
           body: nil | body_ast,
-          top_pins: [Macro.t()],
           # which phase of analysis we're in:
           in: :arg | :when | :expr
         }
@@ -126,162 +129,20 @@ defmodule MatchSpec.Fun2ms do
   @spec set_head(t, arg_ast) :: t
   # attempting to bind variables at the top
   defp set_head(state, arg_ast) do
-    head_matches = find_head_matches(arg_ast, %{top: [], pattern: :_}, state)
-
-    head_matches.top
-    |> Enum.reduce(state, &bind_top_var/2)
-    |> bind_head_match(head_matches.pattern)
-  end
-
-  defp find_head_matches({:=, _, [lhs, rhs]}, matches, state) do
-    Enum.reduce([lhs, rhs], matches, &find_head_matches(&1, &2, state))
-  end
-
-  defp find_head_matches(pinned_var = {:^, _, _}, matches, _state) do
-    %{matches | top: [pinned_var | matches.top], pattern: pinned_var}
-  end
-
-  defp find_head_matches({name, _, tag}, matches, _state) when is_atom(tag) do
-    %{matches | top: [name | matches.top]}
-  end
-
-  defp find_head_matches(other, matches = %{pattern: :_}, _state) do
-    %{matches | pattern: other}
-  end
-
-  defp find_head_matches(other, matches, state) do
-    raise CompileError,
-      description:
-        "only one structured pattern match allowed, multiple structured heads found: `#{Macro.to_string(other)}` and `#{Macro.to_string(matches.pattern)}`",
-      file: state.caller.file,
-      line: state.caller.line
-  end
-
-  @spec bind_top_var(atom, t) :: t
-  # don't bind top vars that are pins of a function variable, but register them as a top pin.
-  defp bind_top_var({:^, _, [pin = {_name, _, tag}]}, state) when is_atom(tag),
-    do: %{state | top_pins: [pin | state.top_pins]}
-
-  # for other top vars:
-  defp bind_top_var(var, state) do
-    if is_map_key(state.bindings, var) do
-      IO.warn("unpinned variable `#{var}` in function match head has the same name as a binding")
-    end
-
-    case Atom.to_string(var) do
-      "_" <> _ ->
-        # don't bother binding since this is an ignored parameter.
-        %{state | head: :_}
-
-      _ ->
-        # still safe to ignore matching on the head because subsequent uses of the variable
-        # will use "whole match" idiom.
-        %{state | head: :_, bindings: Map.put(state.bindings, var, :"$_")}
-    end
-  end
-
-  @spec bind_head_match(t, arg_ast) :: t
-  defp bind_head_match(state, arg_ast) do
-    {head_ast, new_state} = translate_arg(arg_ast, state)
-    %{new_state | head: head_ast}
-  end
-
-  @spec translate_arg(arg_ast, t) :: {head_ast, t}
-  defp translate_arg({:^, _, [{var, _, tag}]}, state) when is_atom(tag) do
-    vars =
-      state.bindings
-      |> Map.values()
-      |> Enum.flat_map(&List.wrap(if match?({_, _, _}, &1), do: elem(&1, 0)))
-
-    case Map.fetch(state.bindings, var) do
-      {:ok, var_ast} ->
-        {var_ast, state}
-
-      _ ->
-        raise CompileError,
-          description: "pin requires a bound variable (got #{var}, found: #{inspect(vars)})",
-          file: state.caller.file,
-          line: state.caller.line
-    end
-  end
-
-  defp translate_arg({var, _, tag}, state) when is_atom(tag) do
-    if String.starts_with?(Atom.to_string(var), "_") do
-      {:_, state}
-    else
-      # add the variable to the collection of known bindings
-      index =
-        case state.bindings do
-          %{^var => index} when is_integer(index) ->
-            index
-
-          %{^var => {_, _, _}} ->
-            IO.warn(
-              "unpinned variable `#{var}` in function match head has the same name as a binding"
-            )
-
-            lowest_index(state.bindings)
-
-          _ ->
-            lowest_index(state.bindings)
-        end
-
-      {:"$#{index}", %{state | bindings: Map.put(state.bindings, var, index)}}
-    end
-  end
-
-  # a twople is a special case
-  defp translate_arg({a, b}, state) do
-    {match_list, state} = translate_arg([a, b], state)
-    {List.to_tuple(match_list), state}
-  end
-
-  defp translate_arg({:{}, _, tuple_list}, state) do
-    {match_list, state} = translate_arg(tuple_list, state)
-    {to_tuple_ast(match_list), state}
-  end
-
-  defp translate_arg(list, state) when is_list(list) do
-    Enum.map_reduce(list, state, &translate_arg/2)
-  end
-
-  defp translate_arg({:%, _, [aliasing, map]}, state) do
-    {map_part, new_state} = translate_arg(map, state)
-    {{:%, [], [aliasing, map_part]}, new_state}
-  end
-
-  defp translate_arg({:%{}, _, map}, state) do
-    {match_list, state} =
-      Enum.map_reduce(map, state, fn
-        {k, v}, state ->
-          {v_encoded, new_state} = translate_arg(v, state)
-          {{k, v_encoded}, new_state}
-      end)
-
-    {{:%{}, [], match_list}, state}
-  end
-
-  defp translate_arg(literal, state) when is_number(literal) or is_binary(literal) do
-    {literal, state}
-  end
-
-  defp translate_arg(atom, state) when is_atom(atom) do
-    {atom, state}
-  end
-
-  defp lowest_index(bindings) do
-    bindings
-    |> Map.values()
-    |> Enum.reject(&(match?({_, _, _}, &1) or &1 == :"$_"))
-    |> case do
-      [] -> 1
-      list -> Enum.max(list) + 1
-    end
+    head = Head.from_arg_ast(arg_ast, state.bindings, state.caller)
+    %{state | head: head.head_ast, pins: head.pins, bindings: head.bindings}
   end
 
   @spec set_condition(t, when_ast) :: t
   defp set_condition(state, when_ast) do
-    %{state | conditions: Enum.map(when_ast, &expression_from(&1, %{state | in: :when}))}
+    pin_conditions =
+      Enum.map(state.pins, fn
+        {match_var, ast} -> to_tuple_ast({:"=:=", match_var, {:const, ast}})
+      end)
+
+    when_conditions = Enum.map(when_ast, &expression_from(&1, %{state | in: :when}))
+
+    %{state | conditions: pin_conditions ++ when_conditions}
   end
 
   @spec set_body(t, body_ast) :: t
@@ -378,7 +239,8 @@ defmodule MatchSpec.Fun2ms do
         ===: {:"=:=", 2},
         !=: {:"/=", 2},
         !==: {:"=/=", 2},
-        when: {:orelse, 2} # multiple when clauses in a match are equivalent to "or" 🤯
+        # multiple when clauses in a match are equivalent to "or" 🤯
+        when: {:orelse, 2}
       ] do
     defp expression_from({unquote(exguard), _, args}, state)
          when length(args) == unquote(arity) do
@@ -472,25 +334,34 @@ defmodule MatchSpec.Fun2ms do
     case Macro.expand(call, %{state.caller | context: :guard}) do
       ^call ->
         part_name = Map.fetch!(@part_name, state.in)
+
         raise CompileError,
           description: "non-guard function found in #{part_name}: `#{Macro.to_string(call)}`",
           file: state.caller.file,
           line: state.caller.line
+
       guard ->
         expression_from(guard, state)
     end
   end
 
-  # creates argument error if a top-pin variable is not a tuple.
+  # creates argument error if a top-pin variable is not a tuple.  We know a
+  # pinned variable is top-pin if its matchspec id is `$_`
   @spec argument_error_warning(t) :: Macro.t()
   defp argument_error_warning(state) do
-    Enum.map(
-      state.top_pins,
-      &quote bind_quoted: [match: &1] do
-        unless is_tuple(match) do
-          raise ArgumentError,
-                "matching against the whole match must be a tuple, got pinned value `#{inspect(match)}`"
-        end
+    Enum.flat_map(
+      state.pins,
+      fn {matchspec_id, var_ast} ->
+        List.wrap(
+          if matchspec_id == :"$_" do
+            quote bind_quoted: [match: var_ast] do
+              unless is_tuple(match) do
+                raise ArgumentError,
+                      "matching against the whole match must be a tuple, got pinned value `#{inspect(match)}`"
+              end
+            end
+          end
+        )
       end
     )
   end

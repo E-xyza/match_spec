@@ -8,7 +8,9 @@ defmodule MatchSpecTest.DefmatchspecTest do
     end
 
     test "works with one body" do
-      assert [{{:foo, :"$1"}, [], [:"$1"]}] == test_def_one_body(:foo)
+      assert [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, :foo}}], [:"$2"]}] ==
+               test_def_one_body(:foo)
+
       assert function_exported?(__MODULE__, :test_def_one_body, 1)
     end
 
@@ -17,7 +19,7 @@ defmodule MatchSpecTest.DefmatchspecTest do
     end
 
     test "works with a when in the match" do
-      assert [{{:foo, :"$1"}, [{:is_integer, :"$1"}], [:"$1"]}] ==
+      assert [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, :foo}}, {:is_integer, :"$2"}], [:"$2"]}] ==
                test_def_with_when_in_match(:foo)
     end
 
@@ -26,7 +28,8 @@ defmodule MatchSpecTest.DefmatchspecTest do
     end
 
     test "works with a when in the main function" do
-      assert [{{1, :"$1"}, [], [:"$1"]}] == test_def_with_when_in_fn(1)
+      assert [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, 1}}], [:"$2"]}] ==
+               test_def_with_when_in_fn(1)
     end
 
     defmatchspec test_def_with_multiple_bodies(key) when is_integer(key) do
@@ -38,8 +41,11 @@ defmodule MatchSpecTest.DefmatchspecTest do
     end
 
     test "works with multiple bodies" do
-      assert [{{1, :"$1"}, [], [:"$1"]}] == test_def_with_multiple_bodies(1)
-      assert [{{:"$1", :foo}, [], [:"$1"]}] == test_def_with_multiple_bodies(:foo)
+      assert [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, 1}}], [:"$2"]}] ==
+               test_def_with_multiple_bodies(1)
+
+      assert [{{:"$1", :"$2"}, [{:"=:=", :"$2", {:const, :foo}}], [:"$1"]}] ==
+               test_def_with_multiple_bodies(:foo)
     end
   end
 
@@ -49,7 +55,9 @@ defmodule MatchSpecTest.DefmatchspecTest do
     end
 
     test "works" do
-      assert [{{:foo, :"$1"}, [], [:"$1"]}] == test_defp_matchspec(:foo)
+      assert [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, :foo}}], [:"$2"]}] ==
+               test_defp_matchspec(:foo)
+
       refute function_exported?(__MODULE__, :test_defp_matchspec, 1)
     end
   end
