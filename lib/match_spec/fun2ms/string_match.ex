@@ -26,6 +26,7 @@ defmodule MatchSpec.Fun2ms.StringMatch do
 
     merge_parts =
       parts
+      |> consolidate
       |> Enum.reduce(from_head_state(head_state, ms_var), &from_part/2)
       |> Map.take([:bindings, :pins])
 
@@ -85,6 +86,28 @@ defmodule MatchSpec.Fun2ms.StringMatch do
     %{state | bindings: Map.put(state.bindings, name, tuple_ast), free_match: var}
   end
 
+  @empty_qualifier %{type: false, size: nil}
+
+  defp from_part(pin = {:"::", _, [var, qualifier = {:-, _, _}]}, state = %{caller: caller}) when is_var_ast(var) do
+    %{type: has_type, size: size_ast} = scan_qualifiers(qualifier, @empty_qualifier, caller)
+
+    unless has_type do
+      code = Macro.to_string(pin)
+
+      raise CompileError,
+        description:
+          "invalid segment type, must have the type `binary`, `bytes`, or `utf8`: got `#{code}`",
+        file: caller.file,
+        line: caller.line
+    end
+
+    free_match = unless size_ast, do: var
+    name = var_name(var)
+    tuple_ast = to_tuple_ast({:binary_part, state.ms_var, state.bytes, size_ast})
+
+    %{state | bindings: Map.put(state.bindings, name, tuple_ast), free_match: free_match}
+  end
+
   # pins
   defp from_part(
          pin = {:"::", _, [{:^, _, [var]}, qualifier = {:-, _, _}]},
@@ -93,8 +116,7 @@ defmodule MatchSpec.Fun2ms.StringMatch do
        when is_var_ast(var) do
     validate_variable_bound!(var_name(var), state)
 
-    %{type: has_type, size: size_ast} =
-      scan_qualifiers(qualifier, %{type: false, size: nil}, caller)
+    %{type: has_type, size: size_ast} = scan_qualifiers(qualifier, @empty_qualifier, caller)
 
     unless has_type do
       code = Macro.to_string(pin)
@@ -139,6 +161,8 @@ defmodule MatchSpec.Fun2ms.StringMatch do
 
   defp from_part({:"::", _, [var, type = {name, _, _}]}, %{caller: caller})
        when is_var_ast(var) and is_ast(type) do
+    [var, type, name] |> dbg(limit: 25)
+
     raise CompileError,
       description: "invalid segment type, must be `binary`, `bytes`, or `utf8`: got `#{name}`",
       file: caller.file,
@@ -202,12 +226,15 @@ defmodule MatchSpec.Fun2ms.StringMatch do
 
   defp validate_variable_bound!(var_name, %{caller: caller, bindings: bindings}) do
     case bindings do
-      %{^var_name => {_, _, _}} -> :ok
+      %{^var_name => {_, _, _}} ->
+        :ok
+
       _ ->
-      raise CompileError,
-        description: "pin requires a bound variable (got `#{var_name}`, found: #{binding_list(bindings)})",
-        line: caller.line,
-        file: caller.file
+        raise CompileError,
+          description:
+            "pin requires a bound variable (got `#{var_name}`, found: #{binding_list(bindings)})",
+          line: caller.line,
+          file: caller.file
     end
   end
 
@@ -229,6 +256,26 @@ defmodule MatchSpec.Fun2ms.StringMatch do
           file: caller.file
     end)
   end
+
+  # NB: this function does not to be optimized with tail-call.  We generally
+  # expect the binary parts list to be relatively small, and this step only
+  # happens at compile-time.
+
+  defguardp is_consolidatable(x) when is_binary(x) or is_integer(x)
+
+  defp consolidate([first, next | rest])
+       when is_consolidatable(first) and is_consolidatable(next) do
+    consolidate([wrap(first) <> wrap(next) | rest])
+  end
+
+  defp consolidate([other | rest]) do
+    [other | consolidate(rest)]
+  end
+
+  defp consolidate([]), do: []
+
+  defp wrap(integer) when is_integer(integer), do: <<integer>>
+  defp wrap(binary), do: binary
 
   @spec add_to(Macro.t(), Macro.t()) :: Macro.t()
   defp add_to(int1, int2) when is_integer(int1) and is_integer(int2), do: int1 + int2

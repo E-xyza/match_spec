@@ -64,7 +64,15 @@ defmodule MatchSpecTest.StringMatchErrorTest do
                  end
   end
 
-  @pin_head %{@dummy_head | bindings: %{foo: quote do foo end}}
+  @pin_head %{
+    @dummy_head
+    | bindings: %{
+        foo:
+          quote do
+            foo
+          end
+      }
+  }
 
   describe "a string match for a pinned variable" do
     test "must be part of a bound variable" do

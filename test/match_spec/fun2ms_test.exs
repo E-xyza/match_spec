@@ -317,14 +317,30 @@ defmodule MatchSpecTest.Fun2msTest do
              ] = MatchSpec.fun2ms(fn {<<"foo", a::binary>>} -> a end)
     end
 
-    test "matching on multiple extended binaries works" do
+    test "with adjacent binaries will concatenate" do
+      assert [
+               {{:"$1"},
+                [
+                  {:"=:=", {:binary_part, :"$1", 0, 6}, {:const, "foobar"}}
+                ], [{:binary_part, :"$1", 6, {:-, {:byte_size, :"$1"}, 6}}]}
+             ] = MatchSpec.fun2ms(fn {<<"foo", "bar", a::binary>>} -> a end)
+    end
+
+    test "with mix with char literals" do
+      assert [
+               {{:"$1"}, [{:"=:=", {:binary_part, :"$1", 0, 3}, {:const, "foo"}}],
+                [{:binary_part, :"$1", 3, {:-, {:byte_size, :"$1"}, 3}}]}
+             ] = MatchSpec.fun2ms(fn {<<102, "o", 111, a::binary>>} -> a end)
+    end
+
+    test "can work with explicitly sized variables" do
       assert [
                {{:"$1"},
                 [
                   {:"=:=", {:binary_part, :"$1", 0, 3}, {:const, "foo"}},
                   {:"=:=", {:binary_part, :"$1", 3, 3}, {:const, "bar"}}
-                ], [{:binary_part, :"$1", 6, {:-, {:byte_size, :"$1"}, 6}}]}
-             ] = MatchSpec.fun2ms(fn {<<"foo", "bar", a::binary>>} -> a end)
+                ], [{:binary_part, :"$1", 3, 3}]}
+             ] = MatchSpec.fun2ms(fn {<<"foo", a::binary-size(3), "bar">>} -> a end)
     end
 
     test "extra binary specifier on a string literal" do

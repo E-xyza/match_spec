@@ -42,7 +42,7 @@ defmodule MatchSpec.Tools do
         }
 
   # UTILITY functions
-  @spec binding_list(bindings) :: String.t
+  @spec binding_list(bindings) :: String.t()
   def binding_list(bindings) do
     bindings
     |> Enum.flat_map(fn {key, value} ->
@@ -52,7 +52,7 @@ defmodule MatchSpec.Tools do
   end
 
   # two-tuples are special cases.
-  @spec to_tuple_ast(tuple) :: Macro.t
+  @spec to_tuple_ast(tuple) :: Macro.t()
   def to_tuple_ast(tuple = {_, _}), do: tuple
 
   def to_tuple_ast(tuple) when is_tuple(tuple) do
@@ -63,7 +63,7 @@ defmodule MatchSpec.Tools do
     {:{}, [], list}
   end
 
-  @spec tuple_wrap(list) :: Macro.t
+  @spec tuple_wrap(list) :: Macro.t()
   def tuple_wrap(tuple_parts) do
     tuple_parts
     |> List.to_tuple()
