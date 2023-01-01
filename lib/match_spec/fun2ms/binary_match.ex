@@ -1,4 +1,4 @@
-defmodule MatchSpec.Fun2ms.StringMatch do
+defmodule MatchSpec.Fun2ms.BinaryMatch do
   alias MatchSpec.Fun2ms.Head
   alias MatchSpec.Tools
 
@@ -24,13 +24,21 @@ defmodule MatchSpec.Fun2ms.StringMatch do
     index = Head.lowest_index(head_state.bindings)
     ms_var = :"$#{index}"
 
-    merge_parts =
+    parts_state =
       parts
       |> consolidate
       |> Enum.reduce(from_head_state(head_state, ms_var), &from_part/2)
-      |> Map.take([:bindings, :pins])
 
-    {ms_var, Map.merge(head_state, merge_parts)}
+    new_state =
+      Enum.reduce(
+        ~w(bindings pins preflight_checks)a,
+        head_state,
+        fn key, head_state_so_far ->
+          Map.update(head_state_so_far, key, nil, &Enum.into(Map.get(parts_state, key), &1))
+        end
+      )
+
+    {ms_var, new_state}
   end
 
   @spec from_head_state(Head.state(), atom) :: state
@@ -62,7 +70,10 @@ defmodule MatchSpec.Fun2ms.StringMatch do
   defp from_part(binary, state) when is_binary(binary) do
     size = byte_size(binary)
     pin_part = to_tuple_ast({:binary_part, state.ms_var, state.bytes, size})
-    %{state | pins: Map.put(state.pins, pin_part, binary), bytes: add_to(state.bytes, size)}
+
+    state
+    |> add_to_pins(pin_part, binary)
+    |> add_to_bytes(size)
   end
 
   defp from_part({:"::", _, [binary, binary_qualifier]}, state)
@@ -83,12 +94,15 @@ defmodule MatchSpec.Fun2ms.StringMatch do
     size = to_tuple_ast({:-, {:byte_size, state.ms_var}, state.bytes})
     tuple_ast = to_tuple_ast({:binary_part, state.ms_var, state.bytes, size})
 
-    %{state | bindings: Map.put(state.bindings, name, tuple_ast), free_match: var}
+    state
+    |> add_to_bindings(name, tuple_ast)
+    |> set_free_match(var)
   end
 
   @empty_qualifier %{type: false, size: nil}
 
-  defp from_part(pin = {:"::", _, [var, qualifier = {:-, _, _}]}, state = %{caller: caller}) when is_var_ast(var) do
+  defp from_part(pin = {:"::", _, [var, qualifier = {:-, _, _}]}, state = %{caller: caller})
+       when is_var_ast(var) do
     %{type: has_type, size: size_ast} = scan_qualifiers(qualifier, @empty_qualifier, caller)
 
     unless has_type do
@@ -105,7 +119,9 @@ defmodule MatchSpec.Fun2ms.StringMatch do
     name = var_name(var)
     tuple_ast = to_tuple_ast({:binary_part, state.ms_var, state.bytes, size_ast})
 
-    %{state | bindings: Map.put(state.bindings, name, tuple_ast), free_match: free_match}
+    state
+    |> add_to_bindings(name, tuple_ast)
+    |> set_free_match(free_match)
   end
 
   # pins
@@ -147,7 +163,11 @@ defmodule MatchSpec.Fun2ms.StringMatch do
 
     tuple_ast = to_tuple_ast({:binary_part, state.ms_var, state.bytes, size_ast})
 
-    %{state | pins: Map.put(state.pins, tuple_ast, var), bytes: add_to(state.bytes, size_ast)}
+    state
+    |> add_to_pins(tuple_ast, var)
+    |> add_to_bytes(size_ast)
+    |> add_preflight_check(binary_preflight_check(var))
+    |> add_preflight_check(length_preflight_check(var, size_ast))
   end
 
   # error conditions
@@ -161,8 +181,6 @@ defmodule MatchSpec.Fun2ms.StringMatch do
 
   defp from_part({:"::", _, [var, type = {name, _, _}]}, %{caller: caller})
        when is_var_ast(var) and is_ast(type) do
-    [var, type, name] |> dbg(limit: 25)
-
     raise CompileError,
       description: "invalid segment type, must be `binary`, `bytes`, or `utf8`: got `#{name}`",
       file: caller.file,
@@ -251,7 +269,7 @@ defmodule MatchSpec.Fun2ms.StringMatch do
 
         raise CompileError,
           description:
-            "invalid segment type or option for string literal, must be `binary`, `bytes`, or `utf`: got `#{part_str}`",
+            "invalid segment type or option for binary literal, must be `binary`, `bytes`, or `utf`: got `#{part_str}`",
           line: caller.line,
           file: caller.file
     end)
@@ -277,6 +295,15 @@ defmodule MatchSpec.Fun2ms.StringMatch do
   defp wrap(integer) when is_integer(integer), do: <<integer>>
   defp wrap(binary), do: binary
 
+  # reducers
+  @spec add_to_bytes(state, Macro.t()) :: state
+  defp add_to_bytes(state, bytes), do: %{state | bytes: add_to(state.bytes, bytes)}
+
+  @spec set_free_match(state, Macro.t()) :: state
+  defp set_free_match(state, free_match) do
+    %{state | free_match: free_match}
+  end
+
   @spec add_to(Macro.t(), Macro.t()) :: Macro.t()
   defp add_to(int1, int2) when is_integer(int1) and is_integer(int2), do: int1 + int2
   defp add_to(0, ast), do: ast
@@ -284,6 +311,31 @@ defmodule MatchSpec.Fun2ms.StringMatch do
   defp add_to(ast1, ast2) do
     quote do
       unquote(ast1) + unquote(ast2)
+    end
+  end
+
+  defp binary_preflight_check(var) do
+    name = var_name(var)
+
+    quote bind_quoted: [var: var, name: name] do
+      unless is_binary(var) do
+        raise ArgumentError,
+          message: "the variable `#{name}` is required to be a binary, got #{inspect(var)}"
+      end
+    end
+  end
+
+  defp length_preflight_check(var, {:byte_size, _, [var]}), do: nil
+
+  defp length_preflight_check(var, length) do
+    name = var_name(var)
+
+    quote bind_quoted: [var: var, name: name, length: length] do
+      if (size = byte_size(var)) < length do
+        raise ArgumentError,
+          message:
+            "the variable `#{name}` is expected to have length at least #{length}, got #{size}"
+      end
     end
   end
 end

@@ -8,7 +8,15 @@ defmodule MatchSpec.Fun2ms do
   @derive {Inspect, except: [:caller]}
   @enforce_keys [:caller]
   defstruct @enforce_keys ++
-              [:head, bindings: %{}, conditions: [], body: [], pins: %{}, in: :arg]
+              [
+                :head,
+                bindings: %{},
+                conditions: [],
+                body: [],
+                pins: %{},
+                preflight_checks: [],
+                in: :arg
+              ]
 
   @type t :: %__MODULE__{
           caller: Macro.Env.t(),
@@ -18,7 +26,8 @@ defmodule MatchSpec.Fun2ms do
           conditions: [condition_ast],
           body: [body_ast],
           # which phase of analysis we're in:
-          in: :arg | :when | :expr
+          in: :arg | :when | :expr,
+          preflight_checks: [Macro.t()]
         }
 
   # these types represent ast types that correspond to the elixir ast of the function in
@@ -107,7 +116,7 @@ defmodule MatchSpec.Fun2ms do
   @spec to_quoted(t) :: Macro.t()
   defp to_quoted(state) do
     quote do
-      unquote(argument_error_warning(state))
+      unquote(Enum.reverse(state.preflight_checks))
       {unquote(state.head), unquote(state.conditions), unquote(state.body)}
     end
   end
@@ -132,7 +141,14 @@ defmodule MatchSpec.Fun2ms do
   # attempting to bind variables at the top
   defp set_head(state, arg_ast) do
     head = Head.from_arg_ast(arg_ast, state.bindings, state.caller)
-    %{state | head: head.head_ast, pins: head.pins, bindings: head.bindings}
+
+    %{
+      state
+      | head: head.head_ast,
+        pins: head.pins,
+        bindings: head.bindings,
+        preflight_checks: head.preflight_checks
+    }
   end
 
   @spec set_condition(t, when_ast) :: t
@@ -348,26 +364,5 @@ defmodule MatchSpec.Fun2ms do
       guard ->
         expression_from(guard, state)
     end
-  end
-
-  # creates argument error if a top-pin variable is not a tuple.  We know a
-  # pinned variable is top-pin if its matchspec id is `$_`
-  @spec argument_error_warning(t) :: Macro.t()
-  defp argument_error_warning(state) do
-    Enum.flat_map(
-      state.pins,
-      fn {matchspec_id, var_ast} ->
-        List.wrap(
-          if matchspec_id == :"$_" do
-            quote bind_quoted: [match: var_ast] do
-              unless is_tuple(match) do
-                raise ArgumentError,
-                      "matching against the whole match must be a tuple, got pinned value `#{inspect(match)}`"
-              end
-            end
-          end
-        )
-      end
-    )
   end
 end

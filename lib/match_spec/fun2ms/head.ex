@@ -2,13 +2,14 @@ defmodule MatchSpec.Fun2ms.Head do
   @moduledoc false
 
   alias MatchSpec.Tools
-  alias MatchSpec.Fun2ms.StringMatch
+  alias MatchSpec.Fun2ms.BinaryMatch
   import Tools
 
   # to make debugging less insane
   @derive {Inspect, except: [:caller]}
   @enforce_keys [:caller, :bindings]
-  defstruct @enforce_keys ++ [:top_pin, :arg_match_ast, head_ast: :_, pins: %{}]
+  defstruct @enforce_keys ++
+              [:top_pin, :arg_match_ast, head_ast: :_, pins: %{}, preflight_checks: []]
 
   @type state :: %__MODULE__{
           head_ast: Macro.t(),
@@ -17,7 +18,8 @@ defmodule MatchSpec.Fun2ms.Head do
           top_pin: nil | Tools.var_ast(),
           pins: Tools.pins(),
           caller: Macro.Env.t(),
-          bindings: Tools.bindings()
+          bindings: Tools.bindings(),
+          preflight_checks: [Macro.t()]
         }
 
   @spec from_arg_ast(Macro.t(), Macro.Env.t()) :: state
@@ -66,7 +68,10 @@ defmodule MatchSpec.Fun2ms.Head do
     verify_pattern_unique!(head_ast, state)
     verify_pin!(name, state)
 
-    %{state | pins: Map.put(state.pins, :"$_", var), top_pin: head_ast}
+    state
+    |> set_top_pin(head_ast)
+    |> add_to_pins(:"$_", var)
+    |> add_preflight_check(tuple_check(var))
   end
 
   def parse_top(var, state) when is_var_ast(var) do
@@ -78,7 +83,7 @@ defmodule MatchSpec.Fun2ms.Head do
 
     case Atom.to_string(name) do
       "_" <> _ -> state
-      _ -> %{state | bindings: Map.put(state.bindings, name, :"$_")}
+      _ -> add_to_bindings(state, name, :"$_")
     end
   end
 
@@ -113,12 +118,13 @@ defmodule MatchSpec.Fun2ms.Head do
 
     match_var = :"$#{index}"
 
-    {match_var,
-     %{
-       state
-       | pins: Map.put(state.pins, match_var, var),
-         bindings: %{state.bindings | name => index}
-     }}
+    new_state =
+      state
+      |> add_to_pins(match_var, var)
+      # this overwrites the `name` binding.
+      |> add_to_bindings(name, index)
+
+    {match_var, new_state}
   end
 
   # handle vars
@@ -128,7 +134,7 @@ defmodule MatchSpec.Fun2ms.Head do
 
     case Atom.to_string(name) do
       "_" <> _ -> {:_, state}
-      _ -> {:"$#{index}", %{state | bindings: Map.put(state.bindings, name, index)}}
+      _ -> {:"$#{index}", add_to_bindings(state, name, index)}
     end
   end
 
@@ -146,7 +152,7 @@ defmodule MatchSpec.Fun2ms.Head do
   end
 
   def parse_structured({:<<>>, _, parts}, state) do
-    StringMatch.from_parts(parts, state)
+    BinaryMatch.from_parts(parts, state)
   end
 
   # general call structures
@@ -237,5 +243,22 @@ defmodule MatchSpec.Fun2ms.Head do
     |> Enum.reject(&(match?({_, _, _}, &1) or &1 == :"$_"))
     |> Enum.max(fn -> 0 end)
     |> Kernel.+(1)
+  end
+
+  # reducers
+
+  defp set_top_pin(state, top_pin) do
+    %{state | top_pin: top_pin}
+  end
+
+  # preflight checks
+
+  defp tuple_check(var) do
+    quote bind_quoted: [var: var] do
+      unless is_tuple(var) do
+        raise ArgumentError,
+              "matching against the whole match must be a tuple, got pinned value `#{inspect(var)}`"
+      end
+    end
   end
 end

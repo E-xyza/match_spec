@@ -41,6 +41,22 @@ defmodule MatchSpec.Tools do
           optional(Macro.t()) => {:const, String.t() | var_ast}
         }
 
+  # generic state reducers
+  def add_to_bindings(state, name, ast) do
+    %{state | bindings: Map.put(state.bindings, name, ast)}
+  end
+
+  def add_to_pins(state, to_check, value),
+    do: %{state | pins: Map.put(state.pins, to_check, value)}
+
+  def add_preflight_check(state, check) do
+    if check do
+      %{state | preflight_checks: [check | state.preflight_checks]}
+    else
+      state
+    end
+  end
+
   # UTILITY functions
   @spec binding_list(bindings) :: String.t()
   def binding_list(bindings) do
@@ -52,7 +68,7 @@ defmodule MatchSpec.Tools do
   end
 
   # two-tuples are special cases.
-  @spec to_tuple_ast(tuple) :: Macro.t()
+  @spec to_tuple_ast(tuple | list) :: Macro.t()
   def to_tuple_ast(tuple = {_, _}), do: tuple
 
   def to_tuple_ast(tuple) when is_tuple(tuple) do
