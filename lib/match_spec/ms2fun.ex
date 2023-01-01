@@ -17,12 +17,12 @@ defmodule MatchSpec.Ms2fun do
     {guards, state!} = Enum.map_reduce(filters, state!, &guard_from_filter/2)
     {body_ast, state!} = body_from(body, state!)
 
-    argument! =
-      if state!.needs_tuple && argument! != var(:tuple) do
-        {:=, [], [var(:tuple), argument!]}
-      else
-        argument!
-      end
+    argument! = case {state!.needs_tuple, argument!} do
+      {false, _} -> argument!
+      {_, {:tuple, _, _}} -> argument!
+      {true, {:_, _, _}} -> var(:tuple)
+      {true, {_, _, _}} -> {:=, [], [var(:tuple), argument!]}
+    end
 
     argument! =
       case guards do
