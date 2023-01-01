@@ -297,6 +297,11 @@ defmodule MatchSpecTest.Fun2msTest do
       assert [{{:"$1"}, [{:orelse, {:"=:=", :"$1", :foo}, {:"=:=", :"$1", :bar}}], [true]}] ==
                MatchSpec.fun2ms(fn {a} when a === :foo when a === :bar -> true end)
     end
+
+    test "dot syntax for map_get works" do
+      assert [{{:"$1"}, [{:map_get, :b, :"$1"}], [true]}] ==
+        MatchSpec.fun2ms(fn {a} when a.b -> true end)
+    end
   end
 
   describe "result expressions" do
