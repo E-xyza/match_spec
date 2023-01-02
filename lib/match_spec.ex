@@ -113,7 +113,10 @@ defmodule MatchSpec do
   [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, :key}}], [:"$2"]}]
   ```
 
-  Note that the `bindings` parameter acts like binding function arguments, and there can be more than one:
+  Note that the `bindings` parameter acts like pattern matching on function
+  arguments:  They may use complex matches and there can be more than one, the
+  arity of the anonymous (or def/defp) function matches the length of the
+  `bindings` argument.
 
   ```elixir
   iex> require MatchSpec
