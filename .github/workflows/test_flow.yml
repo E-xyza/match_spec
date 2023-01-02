@@ -22,6 +22,10 @@ jobs:
         elixir-version: ${{matrix.pair.elixir-version}}
     - name: Install Dependencies
       run: mix deps.get
+    - name: compile
+      run: mix compile --warnings-as-errors
+    - name: Check formatting
+      run: mix format --check-formatting
     - name: Run linting
       run: mix credo --strict
     - name: Run Tests
