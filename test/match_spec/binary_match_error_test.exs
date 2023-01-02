@@ -1,8 +1,8 @@
 defmodule MatchSpecTest.StringMatchErrorTest do
   use ExUnit.Case, async: true
 
-  alias MatchSpec.Fun2ms.Head
   alias MatchSpec.Fun2ms.BinaryMatch
+  alias MatchSpec.Fun2ms.Head
 
   @dummy_head %Head{caller: __ENV__, bindings: %{}}
 
@@ -117,11 +117,11 @@ defmodule MatchSpecTest.StringMatchErrorTest do
     test "must have a size specifier in compound specifier" do
       {_, _, parts} =
         quote do
-          <<^foo::binary-binary>>
+          <<^foo::binary-utf8>>
         end
 
       assert_raise CompileError,
-                   ~r"invalid segment type, a pinned variable must have a size specifier.  Try `\^foo :: binary - size\(byte_size\(foo\)\)` in place of `\^foo :: binary - binary`$",
+                   ~r"invalid segment type, a pinned variable must have a size specifier.  Try `\^foo :: binary - size\(byte_size\(foo\)\)` in place of `\^foo :: binary - utf8`$",
                    fn ->
                      BinaryMatch.from_parts(parts, @pin_head)
                    end

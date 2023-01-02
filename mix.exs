@@ -5,7 +5,7 @@ defmodule MatchSpec.MixProject do
     [
       app: :match_spec,
       version: "0.2.0",
-      elixir: "~> 1.14",
+      elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: "helper module for match specs",
@@ -39,7 +39,7 @@ defmodule MatchSpec.MixProject do
       # These are the default files included in the package
       files: ~w(lib .formatter.exs mix.exs README* LICENSE* CHANGELOG*),
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/ityonemo/match_spec"}
+      links: %{"GitHub" => "https://github.com/e-xyza/match_spec"}
     ]
   end
 end

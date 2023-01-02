@@ -114,71 +114,79 @@ defmodule MatchSpec do
 
     case type do
       type when type in [:def, :defp] ->
-        unless name do
-          raise CompileError,
-            description: "def and defp fun2msfun invocations must have a name",
-            file: __CALLER__.file,
-            line: __CALLER__.line
-        end
-
-        if __CALLER__.function do
-          raise CompileError,
-            description: "def and defp fun2msfun invocations must be in the module body",
-            file: __CALLER__.file,
-            line: __CALLER__.line
-        end
-
-        if context = __CALLER__.context do
-          raise CompileError,
-            description: "def and defp fun2msfun invocations may not be in a #{context}",
-            file: __CALLER__.file,
-            line: __CALLER__.line
-        end
-
-        ms_ast = Fun2ms.from_arrows(arrows, bind: bindings, caller: __CALLER__)
-
-        quote do
-          unquote(type)(unquote(name)(unquote_splicing(bindings))) do
-            unquote(ms_ast)
-          end
-        end
+        make_fun(type, name, __CALLER__, bindings, arrows)
 
       :lambda ->
-        if name do
-          raise CompileError,
-            description: "lambda fun2msfun invocations must not have a name",
-            file: __CALLER__.file,
-            line: __CALLER__.line
-        end
-
-        # it should be ok to run it from IEx or outside of a module in general.
-        unless !__CALLER__.module or __CALLER__.function do
-          raise CompileError,
-            description: "lambda fun2msfun invocations must be in a function body",
-            file: __CALLER__.file,
-            line: __CALLER__.line
-        end
-
-        if context = __CALLER__.context do
-          raise CompileError,
-            description: "lambda fun2msfun invocations may not be in a #{context}",
-            file: __CALLER__.file,
-            line: __CALLER__.line
-        end
-
-        ms_ast = Fun2ms.from_arrows(arrows, bind: bindings, caller: __CALLER__)
-
-        quote do
-          fn unquote_splicing(bindings) ->
-            unquote(ms_ast)
-          end
-        end
+        make_lambda(name, __CALLER__, bindings, arrows)
 
       _ ->
         raise CompileError,
           description: "fun2msfun must be one of `:lambda`, `:def`, `:defp`",
           file: __CALLER__.file,
           line: __CALLER__.line
+    end
+  end
+
+  defp make_fun(type, name, caller, bindings, arrows) do
+    unless name do
+      raise CompileError,
+        description: "def and defp fun2msfun invocations must have a name",
+        file: caller.file,
+        line: caller.line
+    end
+
+    if caller.function do
+      raise CompileError,
+        description: "def and defp fun2msfun invocations must be in the module body",
+        file: caller.file,
+        line: caller.line
+    end
+
+    if context = caller.context do
+      raise CompileError,
+        description: "def and defp fun2msfun invocations may not be in a #{context}",
+        file: caller.file,
+        line: caller.line
+    end
+
+    ms_ast = Fun2ms.from_arrows(arrows, bind: bindings, caller: caller)
+
+    quote do
+      unquote(type)(unquote(name)(unquote_splicing(bindings))) do
+        unquote(ms_ast)
+      end
+    end
+  end
+
+  defp make_lambda(name, caller, bindings, arrows) do
+    if name do
+      raise CompileError,
+        description: "lambda fun2msfun invocations must not have a name",
+        file: caller.file,
+        line: caller.line
+    end
+
+    # it should be ok to run it from IEx or outside of a module in general.
+    unless !caller.module or caller.function do
+      raise CompileError,
+        description: "lambda fun2msfun invocations must be in a function body",
+        file: caller.file,
+        line: caller.line
+    end
+
+    if context = caller.context do
+      raise CompileError,
+        description: "lambda fun2msfun invocations may not be in a #{context}",
+        file: caller.file,
+        line: caller.line
+    end
+
+    ms_ast = Fun2ms.from_arrows(arrows, bind: bindings, caller: caller)
+
+    quote do
+      fn unquote_splicing(bindings) ->
+        unquote(ms_ast)
+      end
     end
   end
 

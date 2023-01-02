@@ -22,31 +22,7 @@ jobs:
         elixir-version: ${{matrix.pair.elixir-version}}
     - name: Install Dependencies
       run: mix deps.get
-    #- name: Run Linting
-    #  run: mix credo --strict
+    - name: Run linting
+      run: mix credo --strict
     - name: Run Tests
-      run: mix test
-  macos:
-    runs-on: macos-latest
-    name: MacOS OTP ${{matrix.pair.otp-version}} / Elixir ${{matrix.pair.elixir-version}}
-    strategy:
-      matrix:
-        pair:
-          - otp-version: '24.0'
-            elixir-version: '1.13'
-          - otp-version: '25.0'
-            elixir-version: '1.14'
-    steps:
-    - uses: actions/checkout@v1
-    - name: Install Elixir
-      run: |
-        brew update
-        brew install elixir
-    - name: Setup mix
-      run: |
-        mix local.hex --force
-        mix local.rebar --force
-    - name: Install Dependencies
-      run: mix deps.get
-    - name: Run Test
       run: mix test

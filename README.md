@@ -1,5 +1,7 @@
 # MatchSpec
 
+![tests](https://github.com/e-xyza/match_spec/actions/workflows/test_flow.yml/badge.svg)
+
 ets matchspec helper library for elixir.  Exposes fun2ms and ms2fun functions which transform
 elixir-style functions into erlang matchspecs.
 
@@ -20,12 +22,10 @@ The package can be installed by adding `match_spec` to your list of dependencies
 ```elixir
 def deps do
   [
-    {:match_spec, "~> 0.1.0"}
+    {:match_spec, "~> 0.2.0"}
   ]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/match_spec>.
+Documentation can be found at <https://hexdocs.pm/match_spec>.
 

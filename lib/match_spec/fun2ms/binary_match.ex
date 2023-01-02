@@ -332,7 +332,8 @@ defmodule MatchSpec.Fun2ms.BinaryMatch do
     name = var_name(var)
 
     quote bind_quoted: [var: var, name: name, length: length] do
-      if (size = byte_size(var)) < length do
+      size = byte_size(var)
+      if size < length do
         raise ArgumentError,
           message:
             "the variable `#{name}` is expected to have length at least #{length}, got #{size}"

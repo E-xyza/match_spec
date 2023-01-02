@@ -1,8 +1,8 @@
 defmodule MatchSpec.Fun2ms.Head do
   @moduledoc false
 
-  alias MatchSpec.Tools
   alias MatchSpec.Fun2ms.BinaryMatch
+  alias MatchSpec.Tools
   import Tools
 
   # to make debugging less insane
