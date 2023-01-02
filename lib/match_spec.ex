@@ -306,16 +306,16 @@ defmodule MatchSpec do
   ```elixir
   use MatchSpec
 
-  defmatchspec my_matchspec(value1, value2) do
-    {key, ^value1, ^value} when key === :foo -> value == value2
+  defmatchspec my_matchspec(value) do
+    {key, ^value} when key !== :foo -> key
   end
   ```
 
   This generates the equivalent to the following function:
 
   ```elixir
-  def my_matchspec(value1, value2) do
-    [{:"$1", :"$2", :"$3"}, [{:"=:=", :"$1", :foo}, {:"=:=", :"$2", value1}], [{:==, :"$3", {:const, value2}}]]
+  def my_matchspec(value) do
+    [{{:"$1", :"$2"}, [{:"=:=", :"$2", {:const, value}}, {:"=/=", :"$1", {:const, :foo}}], [:"$1"]]
   end
   ```
   """
