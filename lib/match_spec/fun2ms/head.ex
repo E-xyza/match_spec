@@ -88,11 +88,26 @@ defmodule MatchSpec.Fun2ms.Head do
   end
 
   # twoples are a special case
-  def parse_top(arg_ast, state) do
+  def parse_top(arg_ast = {_, _}, state) do
     verify_pattern_unique!(arg_ast, state)
 
     {head_ast, new_state} = parse_structured(arg_ast, state)
     %{new_state | head_ast: head_ast, arg_match_ast: arg_ast}
+  end
+
+  # generic tuples
+  def parse_top(tuple_ast = {:{}, _, _}, state) do
+    verify_pattern_unique!(tuple_ast, state)
+
+    {head_ast, new_state} = parse_structured(tuple_ast, state)
+    %{new_state | head_ast: head_ast, arg_match_ast: tuple_ast}
+  end
+
+  def parse_top(disallowed_ast, %{caller: caller}) do
+      raise CompileError,
+        description: "top match must be a tuple (got: #{Macro.to_string(disallowed_ast)})",
+        file: caller.file,
+        line: caller.line
   end
 
   # handle pins

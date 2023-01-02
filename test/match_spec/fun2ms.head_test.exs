@@ -144,7 +144,7 @@ defmodule MatchSpecTest.Fun2ms.HeadTest do
 
     test "can't have multiple patterns, even if they are the same" do
       regex =
-        ~r"only one structured pattern match allowed in the head, multiple patterns found: `{_}` and `{_}`"
+        ~r"only one structured pattern match allowed in the head, multiple patterns found: `{_}` and `{_}`$"
 
       assert_raise CompileError, regex, fn ->
         Head.from_arg_ast(
@@ -205,7 +205,7 @@ defmodule MatchSpecTest.Fun2ms.HeadTest do
     end
 
     test "missing pin in top match causes error" do
-      regex = ~r"pin requires a bound variable \(got `missing`, found: \[\]\)"
+      regex = ~r"pin requires a bound variable \(got `missing`, found: \[\]\)$"
 
       assert_raise CompileError, regex, fn ->
         Head.from_arg_ast(
@@ -218,7 +218,7 @@ defmodule MatchSpecTest.Fun2ms.HeadTest do
     end
 
     test "can't have two pins at the top level" do
-      regex = ~r"only one pin is allowed in the head, multiple pins found: `\^v1` and `\^v2`"
+      regex = ~r"only one pin is allowed in the head, multiple pins found: `\^v1` and `\^v2`$"
 
       assert_raise CompileError, regex, fn ->
         Head.from_arg_ast(
@@ -233,7 +233,7 @@ defmodule MatchSpecTest.Fun2ms.HeadTest do
 
     test "can't have a pin and a structured pattern match, 1" do
       regex =
-        ~r"cannot use a pin in the same head as a structured pattern match, found: `\^v` and `{_}`"
+        ~r"cannot use a pin in the same head as a structured pattern match, found: `\^v` and `{_}`$"
 
       assert_raise CompileError, regex, fn ->
         Head.from_arg_ast(
@@ -248,7 +248,7 @@ defmodule MatchSpecTest.Fun2ms.HeadTest do
 
     test "can't have a pin and a structured pattern match, 2" do
       regex =
-        ~r"cannot use a pin in the same head as a structured pattern match, found: `{_}` and `\^v`"
+        ~r"cannot use a pin in the same head as a structured pattern match, found: `{_}` and `\^v`$"
 
       assert_raise CompileError, regex, fn ->
         Head.from_arg_ast(
@@ -258,6 +258,20 @@ defmodule MatchSpecTest.Fun2ms.HeadTest do
           %{v: {:v, [], nil}},
           __ENV__
         )
+      end
+    end
+
+    test "string concat not allowed in header" do
+      regex =
+        ~r"top match must be a tuple \(got: \"foo\" <> bar\)$"
+      assert_raise CompileError, regex, fn ->
+        Head.from_arg_ast(
+          quote do
+            "foo" <> bar
+          end,
+          __ENV__
+        )
+        |> dbg(limit: 25)
       end
     end
   end
