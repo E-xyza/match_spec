@@ -10,19 +10,28 @@ defmodule MatchSpec do
   For transforming elixir-style functions into matchspecs, the following
   restrictions apply:
 
+  #### Function form
+
   - The function must use the `Kernel.fn/1` macro as its form, or use `defmatchspec/2`
-    or `defmatchspec/3`, where the matchspecs form is similar to the `Kernel.fn/1` form.any()
+    or `defmatchspecp/2`, where the matchspecs form is similar to the `Kernel.fn/1` form
   - The function must have arity 1.
-  - The function may only use guards in its `when` section.
-  - The function may only return a single expression that uses guard functions to
-    transform matches.
 
-  Furthermore, the following restrictions apply to binary pattern matching in the
-  head of the function
+  #### Function argument matching
 
-  - the binary pattern may only consist of single bytes and strings
-    - arbitrary bit-width bitstrings are not supported
+  - The function may only match whole variables or tuple patterns.
+  - Only one tuple pattern may be matched.
+  - if your tuple contains a binary pattern match the binary pattern may only consist
+    of bytes and strings.
+    - bitstrings matching is not supported
     - conversions such as float are not supported.
+
+  #### Guards and return expression
+
+  - The function may only use guards in its `when` section.
+    - for `defmatchspecp/2` or `fun2msfun/4`, a `Kernel.in/2` guard may take a
+      bound variable as its second parameter.
+  - The function may only return a single expression that (optionally) uses guard
+    functions to transform matches.
 
   > #### Note {: .info}
   >
@@ -34,6 +43,8 @@ defmodule MatchSpec do
   alias MatchSpec.Defmatchspec
   alias MatchSpec.Fun2ms
   alias MatchSpec.Ms2fun
+  alias MatchSpec.Tools
+
 
   @doc """
   converts a function ast into an ets matchspec.
@@ -78,27 +89,40 @@ defmodule MatchSpec do
 
   @doc """
   converts a function into a function that generates a match spec based on
-  bindings.  This can be used to either create an named function or an
-  anonymous function.
+  bindings.
 
-  if you would like to use one of the free variables in your function as a part
+  This can be used to either create a named function or an anonymous function.
+  If you would like to use one of the free variables in your function as a part
   of the head of the match, you must pin it.
 
   if you omit the first parameter, it will create an anonymous function.
 
-  Example with `:lambda` (default):
+  ### Basic example with `:lambda` (default):
 
   ```elixir
   iex> require MatchSpec
+
+  # using a variable in the match
   iex> lambda = MatchSpec.fun2msfun(:lambda, fn {key, value} when key === target -> value end, [target])
   iex> lambda.(:key)
   [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, :key}}], [:"$2"]}]
+
+  #pinning a variable
   iex> lambda2 = MatchSpec.fun2msfun(fn {^key, value} -> value end, [key])
   iex> lambda2.(:key)
   [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, :key}}], [:"$2"]}]
   ```
 
-  Example with (`:def`/`:defp`):
+  Note that the `bindings` parameter acts like binding function arguments, and there can be more than one:
+
+  ```elixir
+  iex> require MatchSpec
+  iex> lambda = MatchSpec.fun2msfun(:lambda, fn {^key, ^value} -> true end, [%{key: key}, value])
+  iex> lambda.(%{key: :key}, :value)
+  [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, :key}}, {:"=:=", :"$2", {:const, :value}}], [true]}]
+  ```
+
+  ### Example with (`:def`/`:defp`):
 
   ```elixir
   require MatchSpec
@@ -149,7 +173,7 @@ defmodule MatchSpec do
         line: caller.line
     end
 
-    ms_ast = Fun2ms.from_arrows(arrows, bind: bindings, caller: caller)
+    ms_ast = Fun2ms.from_arrows(arrows, bind: Tools.vars_in(bindings), caller: caller)
 
     quote do
       unquote(type)(unquote(name)(unquote_splicing(bindings))) do
@@ -181,7 +205,7 @@ defmodule MatchSpec do
         line: caller.line
     end
 
-    ms_ast = Fun2ms.from_arrows(arrows, bind: bindings, caller: caller)
+    ms_ast = Fun2ms.from_arrows(arrows, bind: Tools.vars_in(bindings), caller: caller)
 
     quote do
       fn unquote_splicing(bindings) ->

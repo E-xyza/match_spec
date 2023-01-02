@@ -13,4 +13,5 @@
 ## 0.3.0
 
 - support for `in` guard not at compile time.
-- more missed errors
+- more missed errors: doesn't allow forms that aren't tuples at the head
+- more documentation

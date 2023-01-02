@@ -262,8 +262,8 @@ defmodule MatchSpecTest.Fun2ms.HeadTest do
     end
 
     test "string concat not allowed in header" do
-      regex =
-        ~r"top match must be a tuple \(got: \"foo\" <> bar\)$"
+      regex = ~r"top match must be a tuple \(got: \"foo\" <> bar\)$"
+
       assert_raise CompileError, regex, fn ->
         Head.from_arg_ast(
           quote do
@@ -271,7 +271,6 @@ defmodule MatchSpecTest.Fun2ms.HeadTest do
           end,
           __ENV__
         )
-        |> dbg(limit: 25)
       end
     end
   end

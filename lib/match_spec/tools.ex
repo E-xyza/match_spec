@@ -58,6 +58,17 @@ defmodule MatchSpec.Tools do
   end
 
   # UTILITY functions
+
+  @spec vars_in(Macro.t) :: [Macro.t]
+  def vars_in(ast) do
+    ast
+    |> Macro.postwalk([], fn
+      var, acc when is_var_ast(var) -> {[], [var | acc]}
+      _, acc -> {[], acc}
+    end)
+    |> elem(1)
+  end
+
   @spec binding_list(bindings) :: String.t()
   def binding_list(bindings) do
     bindings

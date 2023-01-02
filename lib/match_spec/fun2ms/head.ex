@@ -104,10 +104,10 @@ defmodule MatchSpec.Fun2ms.Head do
   end
 
   def parse_top(disallowed_ast, %{caller: caller}) do
-      raise CompileError,
-        description: "top match must be a tuple (got: #{Macro.to_string(disallowed_ast)})",
-        file: caller.file,
-        line: caller.line
+    raise CompileError,
+      description: "top match must be a tuple (got: #{Macro.to_string(disallowed_ast)})",
+      file: caller.file,
+      line: caller.line
   end
 
   # handle pins

@@ -301,8 +301,10 @@ defmodule MatchSpec.Fun2ms do
   end
 
   # specal case the `in` macro
-  defp expression_from({:in, _, [left, var]}, state) when is_var_ast(var) and is_var_ast(:erlang.map_get(var_name(var), state.bindings)) do
+  defp expression_from({:in, _, [left, var]}, state)
+       when is_var_ast(var) and is_var_ast(:erlang.map_get(var_name(var), state.bindings)) do
     left_expr = expression_from(left, state)
+
     quote do
       unquote(var)
       |> Enum.map(&{:"=:=", unquote(left_expr), {:const, &1}})

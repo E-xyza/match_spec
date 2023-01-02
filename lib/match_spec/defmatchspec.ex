@@ -5,6 +5,7 @@ defmodule MatchSpec.Defmatchspec do
   # defmatchspec and defmatchspecp definitions
 
   alias MatchSpec.Fun2ms
+  alias MatchSpec.Tools
 
   # to make debugging less insane
   @derive {Inspect, except: [:caller]}
@@ -45,7 +46,7 @@ defmodule MatchSpec.Defmatchspec do
       name: name,
       type: type,
       arity: length(bindings),
-      bindings: bindings,
+      bindings: Tools.vars_in(bindings),
       header: header,
       arrows: arrows,
       caller: caller
