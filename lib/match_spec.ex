@@ -5,33 +5,110 @@ defmodule MatchSpec do
   contains functions which transform elixir-style functions into erlang matchspecs,
   and vice versa.
 
-  ### Functions to matchspecs
+  ## Functions to matchspecs
 
   For transforming elixir-style functions into matchspecs, the following
   restrictions apply:
 
-  #### Function form
+  ### Function form
 
   - The function must use the `Kernel.fn/1` macro as its form, or use `defmatchspec/2`
     or `defmatchspecp/2`, where the matchspecs form is similar to the `Kernel.fn/1` form
   - The function must have arity 1.
 
-  #### Function argument matching
+  ### Function argument matching
 
   - The function may only match whole variables or tuple patterns.
   - Only one tuple pattern may be matched.
-  - if your tuple contains a binary pattern match the binary pattern may only consist
-    of bytes and strings.
+  - if your tuple contains a binary pattern match the binary pattern may only
+    consist of bytes and strings, and only the `size/1` modifier is allowed.
     - bitstrings matching is not supported
     - conversions such as float are not supported.
 
-  #### Guards and return expression
+  ### Guards and return expression
 
   - The function may only use guards in its `when` section.
-    - for `defmatchspecp/2` or `fun2msfun/4`, a `Kernel.in/2` guard may take a
-      bound variable as its second parameter.
+    - for `defmatchspec/2`, `defmatchspecp/2`, or `fun2msfun/4`: a`Kernel.in/2`
+      guard may take a bound variable as its second parameter.
   - The function may only return a single expression that (optionally) uses guard
     functions to transform matches.
+
+  ### Examples (allowed)
+
+  #### Binding a top-level variable
+
+  ```elixir
+  fn tuple -> tuple end
+  ```
+
+  #### Top-level tuple match
+
+  ```elixir
+  fn {_, _, value} -> value end
+  ```
+
+  #### When with guard
+
+  ```elixir
+  fn {_, _, value} when is_integer(value) -> value end
+  ```
+
+  #### Structure matching inside a tuple
+
+  ```elixir
+  fn {%{key: a}} -> a end
+  ```
+
+  #### Binary matching inside a tuple
+
+  ```elixir
+  fn {<<"foo" :: binary, 42, a :: binary>>} -> a end
+  ```
+
+  #### Result expression modification by guards
+
+  ```elixir
+  fn {a, b} -> a + b end
+  ```
+
+  ### Examples (disallowed)
+
+  #### Arity not 1
+
+  ```elixir
+  fn foo, bar -> foo + bar end
+  ```
+
+  #### Multiple tuple matches
+
+  ```elixir
+  fn {_, :foo} = {:bar, value} -> value end
+  ```
+
+  #### Non-tuple top level match
+
+  ```elixir
+  fn "foo" <> bar -> bar end
+  fn %{foo: bar} -> bar end
+  ```
+
+  #### Disallowed type in binary match
+
+  ```elixir
+  fn {<<foo :: integer-big-endian>>} -> foo end
+  ```
+
+  #### Non-guard function in match
+
+  ```elixir
+  fn {a} when String.starts_with?(a, "foo") -> a end
+  ```
+
+  #### Non-guard function in result
+
+  ```elixir
+  fn {a, b} -> a ++ b end
+  ```
 
   > #### Note {: .info}
   >
@@ -44,7 +121,6 @@ defmodule MatchSpec do
   alias MatchSpec.Fun2ms
   alias MatchSpec.Ms2fun
   alias MatchSpec.Tools
-
 
   @doc """
   converts a function ast into an ets matchspec.

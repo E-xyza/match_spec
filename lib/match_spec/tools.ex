@@ -59,7 +59,7 @@ defmodule MatchSpec.Tools do
 
   # UTILITY functions
 
-  @spec vars_in(Macro.t) :: [Macro.t]
+  @spec vars_in(Macro.t()) :: [Macro.t()]
   def vars_in(ast) do
     ast
     |> Macro.postwalk([], fn
