@@ -300,6 +300,16 @@ defmodule MatchSpec.Fun2ms do
     end
   end
 
+  # specal case the `in` macro
+  defp expression_from({:in, _, [left, var]}, state) when is_var_ast(var) and is_var_ast(:erlang.map_get(var_name(var), state.bindings)) do
+    left_expr = expression_from(left, state)
+    quote do
+      unquote(var)
+      |> Enum.map(&{:"=:=", unquote(left_expr), {:const, &1}})
+      |> Enum.reduce(&{:orelse, &1, &2})
+    end
+  end
+
   defp expression_from({var, _, tag}, state) when is_atom(tag) do
     case Map.fetch!(state.bindings, var) do
       :"$_" ->

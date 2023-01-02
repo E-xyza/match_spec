@@ -24,6 +24,11 @@ defmodule MatchSpecTest.Fun2msfunTest do
                fun2msfun(fn _ -> output end, [output]).(:foo)
     end
 
+    test "the `in` guard (that isn't really a guard) works" do
+      assert [{{:"$1", :"$2"}, [{:orelse, {:"=:=", :"$1", {:const, :bar}}, {:"=:=", :"$1", {:const, :foo}}}], [:"$2"]}] ==
+        fun2msfun(fn {key, value} when key in output -> value end, [output]).([:foo, :bar])
+    end
+
     test "you can match a string with a fixed size" do
       assert [
                {{:"$1"}, [{:"=:=", {:binary_part, :"$1", 0, 3}, {:const, "foo"}}],
