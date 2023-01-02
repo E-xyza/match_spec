@@ -7,9 +7,14 @@ defmodule MatchSpecTest.Ms2funTest do
     arrows = Macro.escape(arrows)
 
     caller =
-      __CALLER__
-      |> Macro.Env.prune_compile_info()
-      |> Macro.escape()
+      if function_exported?(Macro.Env, :prune_compile_info, 1) do
+        # pruning the compile info is only available in Elixir >= 1.14
+        __CALLER__
+        |> Macro.Env.prune_compile_info()
+        |> Macro.escape()
+      else
+        Macro.escape(__CALLER__)
+      end
 
     quote bind_quoted: [ast: Macro.escape(ast), arrows: arrows, caller: caller] do
       result =

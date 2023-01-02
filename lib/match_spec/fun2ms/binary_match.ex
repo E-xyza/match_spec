@@ -333,6 +333,7 @@ defmodule MatchSpec.Fun2ms.BinaryMatch do
 
     quote bind_quoted: [var: var, name: name, length: length] do
       size = byte_size(var)
+
       if size < length do
         raise ArgumentError,
           message:
