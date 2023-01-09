@@ -400,5 +400,12 @@ defmodule MatchSpecTest.Fun2msTest do
       assert [{{:"$1"}, [], [{:"=:=", :"$1", 5}]}] ==
                MatchSpec.fun2ms(fn {a} -> is_five(a) end)
     end
+
+    defguardp in_guard(x) when x in [:foo, :bar]
+
+    test "local custom guard with `in` works" do
+      assert [{{:"$1"}, [], [{:orelse, {:"=:=", :"$1", :foo}, {:"=:=", :"$1", :bar}}]}] ==
+        MatchSpec.fun2ms(fn {a} -> in_guard(a) end)
+    end
   end
 end
