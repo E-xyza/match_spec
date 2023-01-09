@@ -56,11 +56,19 @@ defmodule MatchSpec do
   > #### Limitations on local guards {: .warning}
   >
   > local (`defguardp`) guards are only supported when the macro is inside
-  > of a function body, due to limitations on macro resolution timing.  The
-  > following cases are currently NOT supported:
+  > of a function body, due to limitations on macro resolution timing.
   >
-  > - `:fun2ms` outside of a function body (inside the module body)
-  > - `:fun2msfun` outside of function body (:lambda, :def, or :defp)
+  > The following use cases are currently NOT supported:
+  >
+  > - `fun2ms/2` outside of a function body (inside the module body)
+  > - `fun2msfun/4` outside of function body (`:lambda`, `:def`, or `:defp`)
+  >
+  > The following use cases are currently supported:
+  >
+  > - `fun2ms/2` inside a function body
+  > - `fun2msfun/4` inside of a function body (`:lambda` only)
+  > - `defmatchspec/2` always
+  > - `defmatchspecp/2` always
 
   #### Structure matching inside a tuple
 
