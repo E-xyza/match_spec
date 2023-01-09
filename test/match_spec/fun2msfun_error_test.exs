@@ -53,6 +53,13 @@ defmodule MatchSpecTest.Fun2msfunErrorTest do
         ~r/def and defp fun2msfun invocations may not be in a match$/
       )
     end
+
+    test "top level with a local guard" do
+      assert_compile_error(
+        "fun2msfun_with_local_guard.exs",
+        ~r"non-guard or local guard function found in when clause: `is_foo\(foo\)`$"
+      )
+    end
   end
 
   describe "lambda fun2msfun invocation" do
@@ -81,6 +88,13 @@ defmodule MatchSpecTest.Fun2msfunErrorTest do
       assert_compile_error(
         "lambda_fun2msfun_in_match.exs",
         ~r/lambda fun2msfun invocations may not be in a match$/
+      )
+    end
+
+    test "top level with a local guard" do
+      assert_compile_error(
+        "fun2msfun_with_local_guard.exs",
+        ~r"non-guard or local guard function found in when clause: `is_foo\(foo\)`$"
       )
     end
   end

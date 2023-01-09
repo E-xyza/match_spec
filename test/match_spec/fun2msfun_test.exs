@@ -65,6 +65,20 @@ defmodule MatchSpecTest.Fun2msfunTest do
                ).("bar")
     end
 
+    # for guards
+    require Integer
+    defguardp is_five(a) when a === 5
+
+    test "builtin custom guards work" do
+      assert [{{:"$1"}, [], [{:andalso, {:is_integer, :"$1"}, {:==, {:band, :"$1", 1}, 0}}]}] ==
+               fun2msfun(fn {a} -> Integer.is_even(a) end, []).()
+    end
+
+    test "local custom guards work inside function bodies" do
+      assert [{{:"$1"}, [], [{:"=:=", :"$1", 5}]}] ==
+               fun2msfun(fn {a} -> is_five(a) end, []).()
+    end
+
     test "fails preflight check if you pass a non-string into binary-pinned content" do
       assert_raise ArgumentError, "the variable `a` is required to be a binary, got :foo", fn ->
         fun2msfun(fn {<<^a::binary-size(3)>>} -> true end, [a]).(:foo)
@@ -93,6 +107,14 @@ defmodule MatchSpecTest.Fun2msfunTest do
     test "defp-style works" do
       assert [{{:"$1", :"$2"}, [{:"=:=", :"$1", {:const, :foo}}], [:"$2"]}] == test_defp(:foo)
       refute function_exported?(__MODULE__, :test_defp, 1)
+    end
+
+    require Integer
+
+    fun2msfun(:defp, :test_builtin, fn {a} -> Integer.is_even(a) end, [])
+
+    test "builtin custom guards work" do
+      assert [{{:"$1"}, [], [{:andalso, {:is_integer, :"$1"}, {:==, {:band, :"$1", 1}, 0}}]}] == test_builtin()
     end
 
     fun2msfun(:def, :test_top_pin, fn ^pin -> true end, [pin])

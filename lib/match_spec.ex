@@ -55,8 +55,8 @@ defmodule MatchSpec do
 
   > #### Limitations on local guards {: .warning}
   >
-  > local (`defguardp`) guards are not curerntly supported due to limitations
-  > on macro resolution timing in the Elixir compiler
+  > local (`defguardp`) guards are only supported when the macro is inside
+  > of a function body, due to limitations on macro resolution timing
 
   #### Structure matching inside a tuple
 

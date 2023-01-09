@@ -3,7 +3,8 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
   alias MatchSpec.Tools
   import Tools
 
-  @spec from_ast(Tools.when_ast | Tools.expr_ast, Fun2ms.t) :: Tools.condition_ast | Tools.body_ast
+  @spec from_ast(Tools.when_ast() | Tools.expr_ast(), Fun2ms.t()) ::
+          Tools.condition_ast() | Tools.body_ast()
 
   guards = [
     is_atom: 1,
@@ -62,8 +63,7 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
           {:element, int + 1, from_ast(tup, state)}
 
         {_, _, _} ->
-          {:element, to_tuple_ast({:+, from_ast(idx, state), 1}),
-           from_ast(tup, state)}
+          {:element, to_tuple_ast({:+, from_ast(idx, state), 1}), from_ast(tup, state)}
       end
     )
   end
@@ -85,7 +85,7 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
         when: {:orelse, 2}
       ] do
     def from_ast({unquote(exguard), _, args}, state)
-         when length(args) == unquote(arity) do
+        when length(args) == unquote(arity) do
       translated_args = Enum.map(args, &from_ast(&1, state))
       to_tuple_ast([unquote(msguard) | translated_args])
     end
@@ -117,7 +117,7 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
 
   for {guard, arity} <- erlangfunctions do
     def from_ast({{:., _, [:erlang, unquote(guard)]}, _, args}, state)
-         when length(args) == unquote(arity) do
+        when length(args) == unquote(arity) do
       translated_args = Enum.map(args, &from_ast(&1, state))
 
       to_tuple_ast([unquote(guard) | translated_args])
@@ -126,7 +126,7 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
 
   # specal case the `in` macro
   def from_ast({:in, _, [left, var]}, state)
-       when is_var_ast(var) and is_var_ast(:erlang.map_get(var_name(var), state.bindings)) do
+      when is_var_ast(var) and is_var_ast(:erlang.map_get(var_name(var), state.bindings)) do
     left_expr = from_ast(left, state)
 
     quote do
@@ -193,7 +193,8 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
         part_name = Map.fetch!(@part_name, state.in)
 
         raise CompileError,
-          description: "non-guard or local guard function found in #{part_name}: `#{Macro.to_string(call)}`",
+          description:
+            "non-guard or local guard function found in #{part_name}: `#{Macro.to_string(call)}`",
           file: state.caller.file,
           line: state.caller.line
 

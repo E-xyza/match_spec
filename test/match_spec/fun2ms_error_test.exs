@@ -80,7 +80,7 @@ defmodule MatchSpecTest.Fun2msErrorTest do
       )
     end
 
-    test "top level with a local guard" do
+    test "module body with a local guard" do
       assert_compile_error(
         "fun2ms_with_local_guard.exs",
         ~r"non-guard or local guard function found in when clause: `is_foo\(foo\)`$"

@@ -47,6 +47,28 @@ defmodule MatchSpecTest.DefmatchspecTest do
       assert [{{:"$1", :"$2"}, [{:"=:=", :"$2", {:const, :foo}}], [:"$1"]}] ==
                test_def_with_multiple_bodies(:foo)
     end
+
+    require Integer
+    defguardp is_five(number) when number === 5
+
+    defmatchspec test_builtin_custom_guard() do
+      {number} when Integer.is_even(number) -> number
+    end
+
+    test "works with builtin custom guard" do
+      assert [
+        {{:"$1"}, [{:andalso, {:is_integer, :"$1"}, {:==, {:band, :"$1", 1}, 0}}],
+         [:"$1"]}
+      ] == test_builtin_custom_guard()
+    end
+
+    defmatchspec test_local_custom_guard() do
+      {number} when is_five(number) -> number
+    end
+
+    test "works with local custom guard" do
+      assert [{{:"$1"}, [{:"=:=", :"$1", 5}], [:"$1"]}] == test_local_custom_guard()
+    end
   end
 
   describe "defmatchspecp" do
