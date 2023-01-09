@@ -39,7 +39,10 @@ defmodule MatchSpec.MixProject do
       # These are the default files included in the package
       files: ~w(lib .formatter.exs mix.exs README* LICENSE* CHANGELOG*),
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/e-xyza/match_spec"}
+      links: %{
+        "GitHub" => "https://github.com/e-xyza/match_spec",
+        "Sponsor" => "https://github.com/sponsors/E-xyza"
+      }
     ]
   end
 end
