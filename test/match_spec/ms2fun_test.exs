@@ -239,11 +239,19 @@ defmodule MatchSpecTest.Ms2funTest do
     test "raw value" do
       assert_identity(fn {v1} when v1 -> v1 end)
     end
+
+    test "works with $_ in the conditions" do
+      assert "fn tuple when is_tuple(tuple) -> true end" == MatchSpec.ms2fun([{:_, [{:is_tuple, :"$_"}], [true]}], :code)
+    end
   end
 
   describe "body" do
     test "arithmetic operator works" do
       assert_identity(fn {v1} -> v1 + 1 end)
+    end
+
+    test "works with $_ in the body" do
+      assert "fn tuple -> tuple end" == MatchSpec.ms2fun([{:_, [], [:"$_"]}], :code)
     end
   end
 end
