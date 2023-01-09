@@ -147,6 +147,15 @@ defmodule MatchSpec do
   [{{:"$1", :"$2"}, [{:andalso, {:>, :"$2", 1}, {:<, :"$2", 10}}], [:"$_"]}]
   ```
 
+  You can use variables from the calling scope in the filters.
+
+  ```elixir
+  iex> require MatchSpec
+  iex> my_atom = :foo
+  iex> MatchSpec.fun2ms(fn tuple = {k, _} when k === my_atom  -> tuple end)
+  [{{:"$1", :_}, [{:"=:=", :"$1", :foo}], [:"$_"]}]
+  ```
+
   If you would also like the equivalent lambda, pass `with_fun: true` as an
   option and the `fun2ms/2` macro will emit a tuple of the matchspec and the
   lambda.

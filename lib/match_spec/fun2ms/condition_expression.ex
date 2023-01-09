@@ -147,6 +147,9 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
       var when is_var_ast(var) ->
         {:const, var}
 
+      {:external, {k, context}} ->
+        {k, [], context}
+
       part = {:{}, _, [:binary_part | _]} ->
         part
     end

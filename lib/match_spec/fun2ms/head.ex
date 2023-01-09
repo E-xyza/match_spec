@@ -255,7 +255,7 @@ defmodule MatchSpec.Fun2ms.Head do
   def lowest_index(bindings) do
     bindings
     |> Map.values()
-    |> Enum.reject(&(match?({_, _, _}, &1) or &1 == :"$_"))
+    |> Enum.reject(&(match?({_, _, _}, &1) or &1 == :"$_" or match?({:external, {_, _}}, &1)))
     |> Enum.max(fn -> 0 end)
     |> Kernel.+(1)
   end

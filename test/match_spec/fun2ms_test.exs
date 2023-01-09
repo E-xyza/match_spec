@@ -307,6 +307,12 @@ defmodule MatchSpecTest.Fun2msTest do
       assert [{{[:"$1" | :"$2"]}, [], [{{:"$1", :"$2"}}]}] ==
                MatchSpec.fun2ms(fn {[a | b]} -> {a, b} end)
     end
+
+    test "local variables can be bound" do
+      bar = :bar
+      assert [{{:"$1"}, [{:"=:=", :"$1", :bar}], [true]}] ==
+               MatchSpec.fun2ms(fn {a} when a === bar -> true end)
+    end
   end
 
   describe "matching on binaries" do

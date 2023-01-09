@@ -123,9 +123,13 @@ defmodule MatchSpec.Fun2ms do
   end
 
   defp load_bindings(state, opts) do
+    external_bindings = state.caller
+    |> Macro.Env.vars
+    |> Map.new(fn {var, context} -> {var, {:external, {var, context}}} end)
+
     opts
     |> Keyword.get(:bind, [])
-    |> Enum.reduce(state, fn
+    |> Enum.reduce(%{state | bindings: external_bindings}, fn
       to_bind = {var, _, _atom}, state_so_far ->
         new_bindings = Map.put(state_so_far.bindings, var, to_bind)
         %{state_so_far | bindings: new_bindings}
