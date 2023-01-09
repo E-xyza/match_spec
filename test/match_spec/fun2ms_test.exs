@@ -310,6 +310,7 @@ defmodule MatchSpecTest.Fun2msTest do
 
     test "local variables can be bound" do
       bar = :bar
+
       assert [{{:"$1"}, [{:"=:=", :"$1", :bar}], [true]}] ==
                MatchSpec.fun2ms(fn {a} when a === bar -> true end)
     end
@@ -405,12 +406,12 @@ defmodule MatchSpecTest.Fun2msTest do
 
     test "local custom guard with `in` works" do
       assert [{{:"$1"}, [{:orelse, {:"=:=", :"$1", :foo}, {:"=:=", :"$1", :bar}}], [:"$1"]}] ==
-        MatchSpec.fun2ms(fn {a} when in_guard(a) -> a end)
+               MatchSpec.fun2ms(fn {a} when in_guard(a) -> a end)
     end
 
     test "local guard with string" do
       assert [{{:"$1"}, [{:"=:=", :"$1", {:const, "foo"}}], [:"$1"]}] ==
-        MatchSpec.fun2ms(fn {a} when a === "foo" -> a end)
+               MatchSpec.fun2ms(fn {a} when a === "foo" -> a end)
     end
   end
 end

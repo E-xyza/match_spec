@@ -57,9 +57,8 @@ defmodule MatchSpecTest.DefmatchspecTest do
 
     test "works with builtin custom guard" do
       assert [
-        {{:"$1"}, [{:andalso, {:is_integer, :"$1"}, {:==, {:band, :"$1", 1}, 0}}],
-         [:"$1"]}
-      ] == test_builtin_custom_guard()
+               {{:"$1"}, [{:andalso, {:is_integer, :"$1"}, {:==, {:band, :"$1", 1}, 0}}], [:"$1"]}
+             ] == test_builtin_custom_guard()
     end
 
     defmatchspec test_local_custom_guard() do

@@ -123,9 +123,10 @@ defmodule MatchSpec.Fun2ms do
   end
 
   defp load_bindings(state, opts) do
-    external_bindings = state.caller
-    |> Macro.Env.vars
-    |> Map.new(fn {var, context} -> {var, {:external, {var, context}}} end)
+    external_bindings =
+      state.caller
+      |> Macro.Env.vars()
+      |> Map.new(fn {var, context} -> {var, {:external, {var, context}}} end)
 
     opts
     |> Keyword.get(:bind, [])

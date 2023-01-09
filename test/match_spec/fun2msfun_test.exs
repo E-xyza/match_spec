@@ -114,7 +114,8 @@ defmodule MatchSpecTest.Fun2msfunTest do
     fun2msfun(:defp, :test_builtin, fn {a} -> Integer.is_even(a) end, [])
 
     test "builtin custom guards work" do
-      assert [{{:"$1"}, [], [{:andalso, {:is_integer, :"$1"}, {:==, {:band, :"$1", 1}, 0}}]}] == test_builtin()
+      assert [{{:"$1"}, [], [{:andalso, {:is_integer, :"$1"}, {:==, {:band, :"$1", 1}, 0}}]}] ==
+               test_builtin()
     end
 
     fun2msfun(:def, :test_top_pin, fn ^pin -> true end, [pin])

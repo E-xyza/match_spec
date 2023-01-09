@@ -1,6 +1,6 @@
 defmodule MatchSpec.Fun2ms.ConditionExpression do
   @moduledoc false
-  
+
   alias MatchSpec.Fun2ms
   alias MatchSpec.Tools
   import Tools

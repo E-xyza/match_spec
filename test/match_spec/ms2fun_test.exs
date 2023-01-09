@@ -241,7 +241,8 @@ defmodule MatchSpecTest.Ms2funTest do
     end
 
     test "works with $_ in the conditions" do
-      assert "fn tuple when is_tuple(tuple) -> true end" == MatchSpec.ms2fun([{:_, [{:is_tuple, :"$_"}], [true]}], :code)
+      assert "fn tuple when is_tuple(tuple) -> true end" ==
+               MatchSpec.ms2fun([{:_, [{:is_tuple, :"$_"}], [true]}], :code)
     end
   end
 
