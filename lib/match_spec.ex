@@ -160,8 +160,8 @@ defmodule MatchSpec do
   ```elixir
   iex> require MatchSpec
   iex> my_atom = :foo
-  iex> MatchSpec.fun2ms(fn tuple = {k, _} when k === my_atom  -> tuple end)
-  [{{:"$1", :_}, [{:"=:=", :"$1", :foo}], [:"$_"]}]
+  iex> MatchSpec.fun2ms(fn tuple = {k, _} when k === my_atom -> tuple end)
+  [{{:"$1", :_}, [{:"=:=", :"$1", {:const, :foo}}], [:"$_"]}]
   ```
 
   If you would also like the equivalent lambda, pass `with_fun: true` as an

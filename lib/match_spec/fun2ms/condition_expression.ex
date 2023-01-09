@@ -150,7 +150,7 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
         {:const, var}
 
       {:external, {k, context}} ->
-        {k, [], context}
+        {:const, {k, [], context}}
 
       part = {:{}, _, [:binary_part | _]} ->
         part

@@ -311,7 +311,7 @@ defmodule MatchSpecTest.Fun2msTest do
     test "local variables can be bound" do
       bar = :bar
 
-      assert [{{:"$1"}, [{:"=:=", :"$1", :bar}], [true]}] ==
+      assert [{{:"$1"}, [{:"=:=", :"$1", {:const, :bar}}], [true]}] ==
                MatchSpec.fun2ms(fn {a} when a === bar -> true end)
     end
   end
