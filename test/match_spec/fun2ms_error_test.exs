@@ -13,21 +13,21 @@ defmodule MatchSpecTest.Fun2msErrorTest do
     test "having multiple matches that aren't whole variables" do
       assert_compile_error(
         "fun2ms_with_multiple_structural_matches.exs",
-        ~r"only one structured pattern match allowed in the head, multiple patterns found: `{_}` and `{_, _}`"
+        ~r"only one structured pattern match allowed in the head, multiple patterns found: `{_}` and `{_, _}`$"
       )
     end
 
     test "arity not 1" do
       assert_compile_error(
         "fun2ms_with_wrong_arity.exs",
-        ~r"function branches for matchspecs must have arity 1 \(got arity 2\)"
+        ~r"function branches for matchspecs must have arity 1 \(got arity 2\)$"
       )
     end
 
     test "arity not 1 with a when statement" do
       assert_compile_error(
         "fun2ms_with_wrong_arity_and_when.exs",
-        ~r"function branches for matchspecs must have arity 1 \(got arity 2\)"
+        ~r"function branches for matchspecs must have arity 1 \(got arity 2\)$"
       )
     end
 
@@ -41,42 +41,49 @@ defmodule MatchSpecTest.Fun2msErrorTest do
     test "a non-guard function in the when clause" do
       assert_compile_error(
         "fun2ms_with_nonguard_in_when.exs",
-        ~r"non-guard function found in when clause: `Process.get\(:bar\)`"
+        ~r"non-guard or local guard function found in when clause: `Process.get\(:bar\)`$"
       )
     end
 
     test "a non-guard function in the body clause" do
       assert_compile_error(
         "fun2ms_with_nonguard_in_body.exs",
-        ~r"non-guard function found in result expression: `Process.get\(:bar\)`"
+        ~r"non-guard or local guard function found in result expression: `Process.get\(:bar\)`$"
       )
     end
 
     test "top level matches on lists error" do
       assert_compile_error(
         "fun2ms_with_list_match.exs",
-        ~r"top match cannot be a list \(got: \[a\]\)"
+        ~r"top match cannot be a list \(got: \[a\]\)$"
       )
     end
 
     test "top level matches on maps error" do
       assert_compile_error(
         "fun2ms_with_map_match.exs",
-        ~r"top match cannot be a map \(got: %{foo: a}\)"
+        ~r"top match cannot be a map \(got: %{foo: a}\)$"
       )
     end
 
     test "top level matches on structs error" do
       assert_compile_error(
         "fun2ms_with_struct_match.exs",
-        ~r"top match cannot be a struct \(got: %Range{start: a}\)"
+        ~r"top match cannot be a struct \(got: %Range{start: a}\)$"
       )
     end
 
     test "top level matches on binaries error" do
       assert_compile_error(
         "fun2ms_with_binary_match.exs",
-        ~r"top match cannot be a binary \(got: <<_>>\)"
+        ~r"top match cannot be a binary \(got: <<_>>\)$"
+      )
+    end
+
+    test "top level with a local guard" do
+      assert_compile_error(
+        "fun2ms_with_local_guard.exs",
+        ~r"non-guard or local guard function found in when clause: `is_foo\(foo\)`$"
       )
     end
   end
