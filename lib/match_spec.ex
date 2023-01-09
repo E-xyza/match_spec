@@ -53,6 +53,11 @@ defmodule MatchSpec do
   fn {_, _, value} when is_integer(value) -> value end
   ```
 
+  > #### Limitations on local guards {: .warning}
+  >
+  > local (`defguardp`) guards are not curerntly supported due to limitations
+  > on macro resolution timing in the Elixir compiler
+
   #### Structure matching inside a tuple
 
   ```elixir
