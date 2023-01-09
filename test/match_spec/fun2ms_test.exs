@@ -404,8 +404,13 @@ defmodule MatchSpecTest.Fun2msTest do
     defguardp in_guard(x) when x in [:foo, :bar]
 
     test "local custom guard with `in` works" do
-      assert [{{:"$1"}, [], [{:orelse, {:"=:=", :"$1", :foo}, {:"=:=", :"$1", :bar}}]}] ==
-        MatchSpec.fun2ms(fn {a} -> in_guard(a) end)
+      assert [{{:"$1"}, [{:orelse, {:"=:=", :"$1", :foo}, {:"=:=", :"$1", :bar}}], [:"$1"]}] ==
+        MatchSpec.fun2ms(fn {a} when in_guard(a) -> a end)
+    end
+
+    test "local guard with string" do
+      assert [{{:"$1"}, [{:"=:=", :"$1", {:const, "foo"}}], [:"$1"]}] ==
+        MatchSpec.fun2ms(fn {a} when a === "foo" -> a end)
     end
   end
 end

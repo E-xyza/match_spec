@@ -188,6 +188,8 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
 
   def from_ast(number, _state) when is_number(number), do: number
 
+  def from_ast(bitstring, _state) when is_bitstring(bitstring), do: {:const, bitstring}
+
   @part_name %{when: "when clause", expr: "result expression"}
 
   def from_ast(call = {_, _, args}, state) when is_list(args) do
