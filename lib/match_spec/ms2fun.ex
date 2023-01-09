@@ -14,8 +14,8 @@ defmodule MatchSpec.Ms2fun do
 
   defp branches_to_arrows({match, filters, [body]}) do
     {argument!, state!} = argument_from_match(match, %__MODULE__{})
-    {guards, state!} = Enum.map_reduce(filters, state!, &guard_from_filter/2)
-    {body_ast, state!} = body_from(body, state!)
+    {guards, state!} = Enum.map_reduce(filters, state!, &guard_from_condition/2)
+    {body_ast, state!} = guard_from_condition(body, state!)
 
     argument! =
       case {state!.needs_tuple, argument!} do
@@ -91,7 +91,7 @@ defmodule MatchSpec.Ms2fun do
   arity_0_guards = [:node, :self]
 
   for guard <- arity_0_guards do
-    defp guard_from_filter({unquote(guard)}, state) do
+    defp guard_from_condition({unquote(guard)}, state) do
       {{unquote(guard), [], []}, state}
     end
   end
@@ -101,8 +101,8 @@ defmodule MatchSpec.Ms2fun do
     ~w(is_atom is_float is_integer is_list is_number is_pid is_port is_reference is_tuple is_map is_binary is_function not map_size abs hd length round bit_size byte_size tl trunc)a
 
   for guard <- arity_1_guards do
-    defp guard_from_filter({unquote(guard), v1}, state) do
-      {v1_ast, new_state} = guard_from_filter(v1, state)
+    defp guard_from_condition({unquote(guard), v1}, state) do
+      {v1_ast, new_state} = guard_from_condition(v1, state)
       {{unquote(guard), [], [v1_ast]}, new_state}
     end
   end
@@ -110,8 +110,8 @@ defmodule MatchSpec.Ms2fun do
   arity_2_guards = ~w(+ - * div rem > >= < ==)a
 
   for guard <- arity_2_guards do
-    defp guard_from_filter({unquote(guard), v1, v2}, state) do
-      {asts, new_state} = Enum.map_reduce([v1, v2], state, &guard_from_filter/2)
+    defp guard_from_condition({unquote(guard), v1, v2}, state) do
+      {asts, new_state} = Enum.map_reduce([v1, v2], state, &guard_from_condition/2)
       {{unquote(guard), [], asts}, new_state}
     end
   end
@@ -119,8 +119,8 @@ defmodule MatchSpec.Ms2fun do
   erlang_arity_2_guards = ~w(is_record map_get and or xor band bor bxor bnot bsl bsr)a
 
   for guard <- erlang_arity_2_guards do
-    defp guard_from_filter({unquote(guard), v1, v2}, state) do
-      {asts, new_state} = Enum.map_reduce([v1, v2], state, &guard_from_filter/2)
+    defp guard_from_condition({unquote(guard), v1, v2}, state) do
+      {asts, new_state} = Enum.map_reduce([v1, v2], state, &guard_from_condition/2)
       {{{:., [], [:erlang, unquote(guard)]}, [], asts}, new_state}
     end
   end
@@ -128,26 +128,26 @@ defmodule MatchSpec.Ms2fun do
   renamed = [andalso: :and, orelse: :or, "=<": :<=, "=:=": :===, "=/=": :!==, "/=": :!=]
 
   for {erguard, exguard} <- renamed do
-    defp guard_from_filter({unquote(erguard), v1, v2}, state) do
-      {asts, new_state} = Enum.map_reduce([v1, v2], state, &guard_from_filter/2)
+    defp guard_from_condition({unquote(erguard), v1, v2}, state) do
+      {asts, new_state} = Enum.map_reduce([v1, v2], state, &guard_from_condition/2)
       {{unquote(exguard), [], asts}, new_state}
     end
   end
 
   # unusual guards
-  defp guard_from_filter({:is_map_key, v1, v2}, state) do
+  defp guard_from_condition({:is_map_key, v1, v2}, state) do
     # note the order is reversed!
-    {asts, new_state} = Enum.map_reduce([v2, v1], state, &guard_from_filter/2)
+    {asts, new_state} = Enum.map_reduce([v2, v1], state, &guard_from_condition/2)
     {{:is_map_key, [], asts}, new_state}
   end
 
-  defp guard_from_filter({:binary_part, v1, v2, v3}, state) do
-    {asts, new_state} = Enum.map_reduce([v1, v2, v3], state, &guard_from_filter/2)
+  defp guard_from_condition({:binary_part, v1, v2, v3}, state) do
+    {asts, new_state} = Enum.map_reduce([v1, v2, v3], state, &guard_from_condition/2)
     {{:binary_part, [], asts}, new_state}
   end
 
-  defp guard_from_filter({:element, v1, v2}, state) do
-    {[v1_ast, v2_ast], new_state} = Enum.map_reduce([v1, v2], state, &guard_from_filter/2)
+  defp guard_from_condition({:element, v1, v2}, state) do
+    {[v1_ast, v2_ast], new_state} = Enum.map_reduce([v1, v2], state, &guard_from_condition/2)
 
     case v1 do
       int when is_integer(int) ->
@@ -158,40 +158,27 @@ defmodule MatchSpec.Ms2fun do
     end
   end
 
-  defp guard_from_filter({:size, value}, state) do
-    {value_ast, new_state} = guard_from_filter(value, state)
+  defp guard_from_condition({:size, value}, state) do
+    {value_ast, new_state} = guard_from_condition(value, state)
     {{{:., [], [:erlang, :size]}, [], [value_ast]}, new_state}
   end
 
-  defp guard_from_filter({:const, value}, state), do: {value, state}
+  defp guard_from_condition({:const, value}, state), do: {value, state}
 
-  defp guard_from_filter(:"$_", state), do: {var(:tuple), %{state | needs_tuple: true}}
-  defp guard_from_filter(:"$$", state), do: {splat(state), state}
+  defp guard_from_condition(:"$_", state), do: {var(:tuple), %{state | needs_tuple: true}}
+  defp guard_from_condition(:"$$", state), do: {splat(state), state}
 
-  defp guard_from_filter(atom, state) when is_atom(atom) do
-    with "$" <> number <- Atom.to_string(atom),
-         {int, _} <- Integer.parse(number) do
-      {var(int), state}
-    else
-      _ -> raise "oops"
-    end
-  end
-
-  defp guard_from_filter(number, state) when is_number(number) do
-    {number, state}
-  end
-
-  defp body_from(:"$_", state), do: {var(:tuple), %{state | needs_tuple: true}}
-  defp body_from(:"$$", state), do: {splat(state), state}
-  defp body_from({:const, value}, state), do: {value, state}
-
-  defp body_from(atom, state) when is_atom(atom) do
+  defp guard_from_condition(atom, state) when is_atom(atom) do
     with "$" <> number <- Atom.to_string(atom),
          {int, _} <- Integer.parse(number) do
       {var(int), state}
     else
       _ -> {atom, state}
     end
+  end
+
+  defp guard_from_condition(number, state) when is_number(number) do
+    {number, state}
   end
 
   defp splat(state) do

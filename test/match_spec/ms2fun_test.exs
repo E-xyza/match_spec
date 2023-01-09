@@ -240,4 +240,10 @@ defmodule MatchSpecTest.Ms2funTest do
       assert_identity(fn {v1} when v1 -> v1 end)
     end
   end
+
+  describe "body" do
+    test "arithmetic operator works" do
+      assert_identity(fn {v1} -> v1 + 1 end)
+    end
+  end
 end
