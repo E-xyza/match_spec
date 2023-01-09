@@ -17,18 +17,24 @@ defmodule MatchSpec.Tools do
   @typedoc """
   type that represents the ast of a variable macro.
   """
-  @type var_ast :: {atom, keyword, nil | module}
+  @type var_ast :: {atom, keyword, context :: nil | module}
+
+  @typedoc """
+  represents an external binding that came from the context outside the macro.
+  """
+  @type external :: {:external, {atom, context :: nil | module}}
 
   @typedoc """
   type that represents how we will access a variable.
 
   - if value is an integer, that means the variable can be accessed as :"$<integer>"
   - if value is :"$_" that means it is bound as the full match.
+  - the value could also be `t:external/0`
   - if value is a macro, that means one of two things
     - it is bound as variable from the matchspec function
     - it is part of a string matcher and may have ast as part of its evaluation.
   """
-  @type bindings :: %{optional(atom) => pos_integer | :"$_" | var_ast}
+  @type bindings :: %{optional(atom) => pos_integer | :"$_" | var_ast | external}
 
   @typedoc """
   represents pins.
