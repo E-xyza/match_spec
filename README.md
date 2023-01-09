@@ -53,7 +53,7 @@ The package can be installed by adding `match_spec` to your list of dependencies
 ```elixir
 def deps do
   [
-    {:match_spec, "~> 0.2.0"}
+    {:match_spec, "~> 0.3.1"}
   ]
 end
 ```
