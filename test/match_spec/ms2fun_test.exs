@@ -64,7 +64,7 @@ defmodule MatchSpecTest.Ms2funTest do
     end
 
     test "nested struct works" do
-      assert_identity(fn {%MatchSpecTest.Ms2funTest.MyStruct{key: v1, value: v2}, _} -> v1 end)
+      assert_identity(fn {%MatchSpecTest.Ms2funTest.MyStruct{value: v1, key: v2}, _} -> v2 end)
     end
 
     test "literal string works" do
@@ -174,8 +174,12 @@ defmodule MatchSpecTest.Ms2funTest do
       assert_identity(fn {v1, v2} when map_size(v2) -> v1 end)
     end
 
-    test "node works" do
+    test "node/0 works" do
       assert_identity(fn {v1, v2} when node() -> v1 end)
+    end
+
+    test "node/1 works" do
+      assert_identity(fn {v1, v2} when node(v1) == node() -> v1 end)
     end
 
     test "round works" do
@@ -200,10 +204,6 @@ defmodule MatchSpecTest.Ms2funTest do
 
     test "binary_part works" do
       assert_identity(fn {v1, v2} when binary_part(v2, 0, 2) -> v1 end)
-    end
-
-    test "self works" do
-      assert_identity(fn {v1, v2} when self() -> v1 end)
     end
 
     test "arithmetic operators work" do
@@ -234,6 +234,10 @@ defmodule MatchSpecTest.Ms2funTest do
       assert_identity(fn {v1, v2} when v1 != v2 -> v1 end)
 
       assert_identity(fn {v1, v2} when v1 !== v2 -> v1 end)
+    end
+
+    test "self works" do
+      assert_identity(fn {v1, _} when v1 === self() -> v1 end)
     end
 
     test "raw value" do

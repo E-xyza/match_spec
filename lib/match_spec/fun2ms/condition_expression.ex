@@ -27,6 +27,7 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
     length: 1,
     map_size: 1,
     node: 0,
+    node: 1,
     round: 1,
     size: 1,
     bit_size: 1,

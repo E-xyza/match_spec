@@ -98,7 +98,7 @@ defmodule MatchSpec.Ms2fun do
 
   # arity-1 guards
   arity_1_guards =
-    ~w(is_atom is_float is_integer is_list is_number is_pid is_port is_reference is_tuple is_map is_binary is_function not map_size abs hd length round bit_size byte_size tl trunc)a
+    ~w(is_atom is_float is_integer is_list is_number is_pid is_port is_reference is_tuple is_map is_binary is_function not map_size abs hd length round bit_size byte_size tl trunc node)a
 
   for guard <- arity_1_guards do
     defp guard_from_condition({unquote(guard), v1}, state) do

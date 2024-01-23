@@ -21,3 +21,7 @@
 - unified condition and head processing in ms2fun
 - fixes issue where string literals are not turned into const expressions
 - allows using external variables in ms2fun
+
+## 0.3.2
+
+- support for node/1 as well as node/2
