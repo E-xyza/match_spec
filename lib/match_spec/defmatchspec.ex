@@ -79,7 +79,7 @@ defmodule MatchSpec.Defmatchspec do
 
         raise CompileError,
           description:
-            "#{@matchspec_name[body.type]} #{body.name}/#{body.arity} was already been defined as #{other_typename} in #{previous.caller.file}:#{previous.caller.line}",
+            "#{@matchspec_name[body.type]} #{body.name}/#{body.arity} was already defined as #{other_typename} in #{previous.caller.file}:#{previous.caller.line}",
           line: body.caller.line,
           file: body.caller.file
       end

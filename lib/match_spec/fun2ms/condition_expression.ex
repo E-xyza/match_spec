@@ -76,6 +76,10 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
     to_tuple_ast({:map_get, deref, from_ast(var, state)})
   end
 
+  # at syntax for attributes
+
+  def from_ast({:@, _, _} = ast, _state), do: ast
+
   # guards with names that are different between matchspec and elixir
   for {exguard, {msguard, arity}} <- [
         and: {:andalso, 2},

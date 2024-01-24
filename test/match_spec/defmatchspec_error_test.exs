@@ -27,14 +27,21 @@ defmodule MatchSpecTest.DefmatchspecErrorTest do
     test "if you try to redefine defmatchspec" do
       assert_compile_error(
         "defmatchspecp_after_defmatchspec.exs",
-        ~r(defmatchspecp my_matchspec/1 was already been defined as defmatchspec)
+        ~r(defmatchspecp my_matchspec/1 was already defined as defmatchspec)
       )
     end
 
     test "if you try to redefine defmatchspecp" do
       assert_compile_error(
         "defmatchspec_after_defmatchspecp.exs",
-        ~r(defmatchspec my_matchspec/1 was already been defined as defmatchspecp)
+        ~r(defmatchspec my_matchspec/1 was already defined as defmatchspecp)
+      )
+    end
+
+    test "if you try to have a top level attrribute in defmatchspec" do
+      assert_compile_error(
+        "defmatchspec_top_level_attribute.exs",
+        ~r(top match cannot be an attribute)
       )
     end
   end
