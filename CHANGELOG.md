@@ -25,3 +25,7 @@
 ## 0.3.2
 
 - support for node/1 as well as node/2
+
+## 0.3.3
+
+- support for `@attribute` constants 

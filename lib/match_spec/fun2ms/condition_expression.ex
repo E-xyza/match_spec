@@ -78,7 +78,7 @@ defmodule MatchSpec.Fun2ms.ConditionExpression do
 
   # at syntax for attributes
 
-  def from_ast({:@, _, _} = ast, _state), do: ast
+  def from_ast({:@, _, _} = ast, _state), do: {:const, ast}
 
   # guards with names that are different between matchspec and elixir
   for {exguard, {msguard, arity}} <- [

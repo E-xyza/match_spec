@@ -18,7 +18,7 @@ defmodule MatchSpecTest.DefmatchspecAttributeTest do
     end
 
     test "attribute in guard" do
-      assert [{{:"$1", :"$2"}, [{:==, :"$2", 1}], [:"$1"]}] == test_attribute_in_guard()
+      assert [{{:"$1", :"$2"}, [{:==, :"$2", {:const, 1}}], [:"$1"]}] == test_attribute_in_guard()
     end
 
     defmatchspec test_attribute_in_expression() do
@@ -26,7 +26,7 @@ defmodule MatchSpecTest.DefmatchspecAttributeTest do
     end
 
     test "attribute in expression" do
-      assert [{:_, [], [1]}] == test_attribute_in_expression()
+      assert [{:_, [], [{:const, 1}]}] == test_attribute_in_expression()
     end
   end
 end

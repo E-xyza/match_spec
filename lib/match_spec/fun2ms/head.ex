@@ -105,7 +105,7 @@ defmodule MatchSpec.Fun2ms.Head do
 
   # disallowed forms
 
-  def parse_top({:"@", _, _} = disallowed_ast, %{caller: caller}) do
+  def parse_top({:@, _, _} = disallowed_ast, %{caller: caller}) do
     raise CompileError,
       description: "top match cannot be an attribute (got: #{Macro.to_string(disallowed_ast)})",
       file: caller.file,
@@ -179,7 +179,7 @@ defmodule MatchSpec.Fun2ms.Head do
     BinaryMatch.from_parts(parts, state)
   end
 
-  def parse_structured({:@, _, _} = ast, state) do
+  def parse_structured({:@, _, what} = ast, state) do
     {ast, state}
   end
 
