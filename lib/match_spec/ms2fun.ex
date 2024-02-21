@@ -66,7 +66,7 @@ defmodule MatchSpec.Ms2fun do
     {{:{}, [], tuple_list}, new_state}
   end
 
-  defp argument_from_match(map = %struct{}, state) do
+  defp argument_from_match(%struct{} = map, state) do
     {argument, new_state} = argument_from_match(Map.from_struct(map), state)
 
     {{:%, [], [struct, argument]}, new_state}

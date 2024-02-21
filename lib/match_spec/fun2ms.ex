@@ -131,7 +131,7 @@ defmodule MatchSpec.Fun2ms do
     opts
     |> Keyword.get(:bind, [])
     |> Enum.reduce(%{state | bindings: external_bindings}, fn
-      to_bind = {var, _, _atom}, state_so_far ->
+      {var, _, _atom} = to_bind, state_so_far ->
         new_bindings = Map.put(state_so_far.bindings, var, to_bind)
         %{state_so_far | bindings: new_bindings}
 
@@ -170,7 +170,7 @@ defmodule MatchSpec.Fun2ms do
   end
 
   @spec set_body(t, body_ast) :: t
-  defp set_body(state, block = {:__block__, _, _}) do
+  defp set_body(state, {:__block__, _, _} = block) do
     raise CompileError,
       description: """
       function bodies for matchspecs must be a single result expression, got:

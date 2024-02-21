@@ -151,7 +151,7 @@ defmodule MatchSpec do
 
   ```elixir
   iex> require MatchSpec
-  iex> MatchSpec.fun2ms(fn tuple = {k, v} when v > 1 and v < 10 -> tuple end)
+  iex> MatchSpec.fun2ms(fn {k, v} = tuple when v > 1 and v < 10 -> tuple end)
   [{{:"$1", :"$2"}, [{:andalso, {:>, :"$2", 1}, {:<, :"$2", 10}}], [:"$_"]}]
   ```
 
@@ -160,7 +160,7 @@ defmodule MatchSpec do
   ```elixir
   iex> require MatchSpec
   iex> my_atom = :foo
-  iex> MatchSpec.fun2ms(fn tuple = {k, _} when k === my_atom -> tuple end)
+  iex> MatchSpec.fun2ms(fn {k, _} = tuple when k === my_atom -> tuple end)
   [{{:"$1", :_}, [{:"=:=", :"$1", {:const, :foo}}], [:"$_"]}]
   ```
 
@@ -179,7 +179,7 @@ defmodule MatchSpec do
   This macro uses the same backend as `fun2msfun/4` and will emit the same
   matchspec as if you passed no parameters to `fun2msfun/4`
   """
-  defmacro fun2ms(fun = {:fn, _, arrows}, opts \\ []) do
+  defmacro fun2ms({:fn, _, arrows} = fun, opts \\ []) do
     matchspec = Fun2ms.from_arrows(arrows, caller: __CALLER__)
 
     if Keyword.get(opts, :with_fun) do

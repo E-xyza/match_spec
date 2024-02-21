@@ -35,13 +35,13 @@ defmodule MatchSpec.Defmatchspec do
     end
   end
 
-  def struct_from(type, header = {:when, _, [name_bindings, _guard]}, arrows, caller) do
+  def struct_from(type, {:when, _, [name_bindings, _guard]} = header, arrows, caller) do
     type
     |> struct_from(name_bindings, arrows, caller)
     |> Map.put(:header, header)
   end
 
-  def struct_from(type, header = {name, _, bindings}, arrows, caller) do
+  def struct_from(type, {name, _, bindings} = header, arrows, caller) do
     %__MODULE__{
       name: name,
       type: type,

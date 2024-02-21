@@ -82,7 +82,7 @@ defmodule MatchSpec.Fun2ms.BinaryMatch do
     from_part(binary, state)
   end
 
-  defp from_part({:"::", _, [binary, compound_qualifier = {:-, _, _}]}, state)
+  defp from_part({:"::", _, [binary, {:-, _, _} = compound_qualifier]}, state)
        when is_binary(binary) do
     validate_compound_for_literal!(compound_qualifier, state)
     from_part(binary, state)
@@ -102,7 +102,7 @@ defmodule MatchSpec.Fun2ms.BinaryMatch do
 
   @empty_qualifier %{type: false, size: nil}
 
-  defp from_part(pin = {:"::", _, [var, qualifier = {:-, _, _}]}, state = %{caller: caller})
+  defp from_part({:"::", _, [var, {:-, _, _} = qualifier]} = pin, %{caller: caller} = state)
        when is_var_ast(var) do
     %{type: has_type, size: size_ast} = scan_qualifiers(qualifier, @empty_qualifier, caller)
 
@@ -127,8 +127,8 @@ defmodule MatchSpec.Fun2ms.BinaryMatch do
 
   # pins
   defp from_part(
-         pin = {:"::", _, [{:^, _, [var]}, qualifier = {:-, _, _}]},
-         state = %{caller: caller}
+         {:"::", _, [{:^, _, [var]}, {:-, _, _} = qualifier]} = pin,
+         %{caller: caller} = state
        )
        when is_var_ast(var) do
     validate_variable_bound!(var_name(var), state)
@@ -257,7 +257,7 @@ defmodule MatchSpec.Fun2ms.BinaryMatch do
     end
   end
 
-  defp validate_compound_for_literal!({:-, _, parts}, state = %{caller: caller}) do
+  defp validate_compound_for_literal!({:-, _, parts}, %{caller: caller} = state) do
     Enum.each(parts, fn
       part = {:-, _, _} ->
         validate_compound_for_literal!(part, state)

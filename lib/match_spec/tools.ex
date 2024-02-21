@@ -86,7 +86,7 @@ defmodule MatchSpec.Tools do
 
   # two-tuples are special cases.
   @spec to_tuple_ast(tuple | list) :: Macro.t()
-  def to_tuple_ast(tuple = {_, _}), do: tuple
+  def to_tuple_ast({_, _} = tuple), do: tuple
 
   def to_tuple_ast(tuple) when is_tuple(tuple) do
     {:{}, [], Tuple.to_list(tuple)}
