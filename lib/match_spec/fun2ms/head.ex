@@ -179,7 +179,7 @@ defmodule MatchSpec.Fun2ms.Head do
     BinaryMatch.from_parts(parts, state)
   end
 
-  def parse_structured({:@, _, what} = ast, state) do
+  def parse_structured({:@, _, _what} = ast, state) do
     {ast, state}
   end
 
