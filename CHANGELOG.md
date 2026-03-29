@@ -28,4 +28,8 @@
 
 ## 0.3.3
 
-- support for `@attribute` constants 
+- support for `@attribute` constants
+
+## 1.0.0
+
+- updated dependencies (ex_doc ~> 0.40)
